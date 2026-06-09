@@ -24,7 +24,7 @@ memory" tools want you to upload all of it to their cloud. engram is the
 opposite: it builds a searchable memory **on your machine** and never phones home.
 
 ```bash
-npx engram ingest ~/notes ~/journal     # index markdown/text files
+npx engram ingest ~/notes ~/journal     # index markdown, text, PDF, HTML …
 npx engram recall "auth bug clock skew" # ranked passages, with citations
 npx engram recall "hiring" --since week  # time-aware: only recent memories
 npx engram ask "summarize my pricing decisions"   # (optional) local LLM answer
@@ -32,6 +32,11 @@ npx engram ask "summarize my pricing decisions"   # (optional) local LLM answer
 
 Every result tells you exactly where it came from — `file:line` and the date —
 so you can trust it and jump to the source.
+
+> **Supported files:** Markdown, text, `org`, `rst`, **PDF**, and **HTML** — all via
+> zero-dependency extractors. PDF extraction is best-effort: text-based PDFs work
+> great; scanned (image-only), encrypted, or custom-CID-font PDFs may extract
+> poorly. (EPUB is on the roadmap.)
 
 ## Why engram
 
@@ -152,7 +157,9 @@ Without Ollama, engram still works great in lexical + temporal mode.
 
 Early MVP. Lexical + temporal recall, citations, ingest/forget, incremental
 re-index, **live `watch` mode** (auto-reindex on change), the local agent API, an
-**MCP server** (stdio), and optional Ollama embeddings/answers all work today. Roadmap: more file types (PDF/EPUB) and a SQLite store for large vaults.
+**MCP server** (stdio), **PDF + HTML ingestion** (zero-dep extractors), and
+optional Ollama embeddings/answers all work today. Roadmap: EPUB, and a SQLite
+store for large vaults.
 Star/watch to follow along.
 
 ## Sibling projects

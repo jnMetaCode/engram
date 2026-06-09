@@ -16,7 +16,20 @@ import { startServer } from '../src/server.js';
 import { createHandler } from '../src/mcp.js';
 import { ingestPaths } from '../src/ingest.js';
 import { startWatch, debounce } from '../src/watch.js';
+import { extractPdfText } from '../src/pdf.js';
+import { htmlToText } from '../src/extract.js';
 import { spawn } from 'node:child_process';
+import zlib from 'node:zlib';
+
+// Minimal PDF builders for fixtures (text in a single content stream).
+const uncompressedPdf = (t) =>
+  Buffer.from(`%PDF-1.4\n4 0 obj\n<< /Length 0 >>\nstream\nBT (${t}) Tj ET\nendstream\nendobj\n%%EOF`, 'latin1');
+const flatePdf = (t) =>
+  Buffer.concat([
+    Buffer.from('%PDF-1.4\n5 0 obj\n<< /Filter /FlateDecode >>\nstream\n', 'latin1'),
+    zlib.deflateSync(Buffer.from(`BT (${t}) Tj ET`, 'latin1')),
+    Buffer.from('\nendstream\nendobj\n%%EOF', 'latin1'),
+  ]);
 
 const NOTES = fileURLToPath(new URL('./fixtures/notes', import.meta.url));
 const NOW = '2026-06-10T00:00:00.000Z';
@@ -176,6 +189,36 @@ test('incremental ingest of the fixtures: second pass skips everything', () => {
   assert.equal(changed.length, 0);
   assert.equal(unchanged.length, 3);
   assert.equal(store.chunks.length, before); // nothing re-ingested
+});
+
+// ----------------------------------------------------------- extractors ---
+test('extractPdfText reads uncompressed and FlateDecode content streams', () => {
+  assert.match(extractPdfText(uncompressedPdf('Hello engram from a PDF document')), /Hello engram from a PDF document/);
+  assert.match(extractPdfText(flatePdf('Compressed text inside engram')), /Compressed text inside engram/);
+});
+
+test('extractPdfText ignores non-text (image/binary) streams', () => {
+  const buf = Buffer.from('%PDF-1.4\nstream\n\x89PNG binary (stuff) not-text\nendstream\n%%EOF', 'latin1');
+  assert.equal(extractPdfText(buf).trim(), ''); // no BT/Tj -> nothing mined
+});
+
+test('htmlToText strips tags, scripts, and decodes entities', () => {
+  const t = htmlToText('<h1>Title</h1><p>Hello &amp; welcome &lt;ok&gt;</p><script>var x=1</script>');
+  assert.match(t, /Title/);
+  assert.match(t, /Hello & welcome <ok>/);
+  assert.ok(!t.includes('var x=1'));
+});
+
+test('ingest indexes a PDF and recall finds its text', async () => {
+  const dir = fs.mkdtempSync(join(os.tmpdir(), 'engram-pdf-'));
+  fs.writeFileSync(join(dir, 'doc.pdf'), flatePdf('The annual budget meeting is on 2026-08-12 about hiring plans'));
+  const store = tmpStore();
+  const r = await ingestPaths(store, [dir], {});
+  assert.ok(r.chunks >= 1);
+  const res = recall(loadStore(store), 'budget hiring meeting', { now: NOW });
+  assert.ok(res.length >= 1);
+  assert.match(res[0].source, /doc\.pdf/);
+  fs.rmSync(dir, { recursive: true, force: true });
 });
 
 // ----------------------------------------------------------- ingest/watch ---

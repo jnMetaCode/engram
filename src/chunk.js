@@ -2,8 +2,12 @@
 // extracted timestamps. Zero deps.
 import fs from 'node:fs';
 import path from 'node:path';
+import { extractText } from './extract.js';
 
-export const DEFAULT_EXTS = new Set(['.md', '.markdown', '.txt', '.text', '.org', '.rst']);
+export const DEFAULT_EXTS = new Set([
+  '.md', '.markdown', '.txt', '.text', '.org', '.rst',
+  '.pdf', '.html', '.htm', '.xhtml',
+]);
 const SKIP_DIRS = new Set(['.git', 'node_modules', '.engram', '.obsidian', 'dist', 'build']);
 
 export function walkFiles(targets, exts = DEFAULT_EXTS) {
@@ -99,7 +103,7 @@ export function chunkText(text, { maxChars = 900, minChars = 200 } = {}) {
 }
 
 export function chunkFile(file, opts) {
-  const text = fs.readFileSync(file, 'utf8');
+  const text = extractText(file); // handles .pdf / .html / text
   const mtime = fs.statSync(file).mtime.toISOString();
   const chunks = chunkText(text, opts).map((c) => ({
     ...c,
