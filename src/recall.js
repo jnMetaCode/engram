@@ -2,6 +2,7 @@
 // This is the bit that addresses "flat vector dump, no temporal reasoning".
 import { tokenize } from './text.js';
 import { buildIndex, scoreChunk } from './bm25.js';
+import { proximityScore } from './proximity.js';
 import { cosine } from './embed.js';
 
 const DAY = 86400000;
@@ -15,13 +16,29 @@ function recency(whenIso, nowMs, halfLifeDays) {
 
 function snippet(text, queryTerms, width = 240) {
   const lower = text.toLowerCase();
-  let at = -1;
+  // Collect all occurrences of any query term, then center on the window that
+  // contains the most of them (the densest cluster), not just the first hit.
+  const hits = [];
   for (const t of queryTerms) {
-    const i = lower.indexOf(t);
-    if (i >= 0 && (at < 0 || i < at)) at = i;
+    let from = 0;
+    let i;
+    while ((i = lower.indexOf(t, from)) >= 0) {
+      hits.push(i);
+      from = i + t.length;
+    }
   }
-  if (at < 0) return text.slice(0, width).trim() + (text.length > width ? '…' : '');
-  const start = Math.max(0, at - width / 3);
+  if (!hits.length) return text.slice(0, width).trim() + (text.length > width ? '…' : '');
+  hits.sort((a, b) => a - b);
+  let bestStart = hits[0];
+  let bestCount = 0;
+  for (const h of hits) {
+    const count = hits.filter((x) => x >= h && x < h + width).length;
+    if (count > bestCount) {
+      bestCount = count;
+      bestStart = h;
+    }
+  }
+  const start = Math.max(0, bestStart - Math.floor(width / 6));
   const end = Math.min(text.length, start + width);
   return (start > 0 ? '…' : '') + text.slice(start, end).trim() + (end < text.length ? '…' : '');
 }
@@ -56,7 +73,14 @@ export function recall(store, query, opts = {}) {
 
   const qTerms = tokenize(query);
   const idx = buildIndex(chunks);
-  const lex = chunks.map((c) => scoreChunk(qTerms, c, idx));
+  const lexRaw = chunks.map((c) => scoreChunk(qTerms, c, idx));
+  // Boost chunks where the query terms cluster / appear as a phrase (BM25 alone
+  // is bag-of-words and can't see this). Only computed for lexical candidates.
+  const lex = lexRaw.map((s, i) => {
+    if (s <= 0) return s;
+    const { proximity, phrase } = proximityScore(chunks[i].text, qTerms);
+    return s * (1 + 0.6 * proximity + (phrase ? 1 : 0));
+  });
 
   const haveEmb = opts.queryEmbedding && chunks.some((c) => c.embedding);
   const sem = haveEmb

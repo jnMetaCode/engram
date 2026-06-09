@@ -18,6 +18,7 @@ import { ingestPaths } from '../src/ingest.js';
 import { startWatch, debounce } from '../src/watch.js';
 import { extractPdfText } from '../src/pdf.js';
 import { htmlToText } from '../src/extract.js';
+import { proximityScore } from '../src/proximity.js';
 import { spawn } from 'node:child_process';
 import zlib from 'node:zlib';
 
@@ -119,6 +120,33 @@ test('temporal: --since filters out older memories', () => {
   assert.equal(res.length, 0); // both pricing notes are older than a week
   const auth = recall(store, 'authentication', { now: NOW, since });
   assert.ok(auth.length >= 1); // auth-bug is 2026-06-05
+});
+
+test('proximity: adjacent query terms score higher than scattered; phrase detected', () => {
+  const adj = proximityScore('quick brown fox alpha beta gamma', ['quick', 'brown', 'fox']);
+  const far = proximityScore('quick alpha brown beta fox gamma', ['quick', 'brown', 'fox']);
+  assert.ok(adj.proximity > far.proximity);
+  assert.equal(adj.phrase, true);
+  assert.equal(far.phrase, false);
+});
+
+test('recall ranks a phrase match above scattered terms (same BM25)', () => {
+  const store = { version: 1, chunks: [] };
+  const mk = (src, text) => ({ text, source: src, startLine: 1, endLine: 1, mtime: NOW, when: NOW });
+  // same tokens, same length, same tf/idf -> identical BM25; proximity decides
+  ingestChunks(store, 'phrase.md', [mk('phrase.md', 'quick brown fox alpha beta gamma')]);
+  ingestChunks(store, 'scattered.md', [mk('scattered.md', 'quick alpha brown beta fox gamma')]);
+  const res = recall(store, 'quick brown fox', { now: NOW });
+  assert.equal(res.length, 2);
+  assert.match(res[0].source, /phrase\.md/);
+});
+
+test('snippet centers on the densest cluster of query terms', () => {
+  const store = { version: 1, chunks: [] };
+  const long = 'intro padding padding padding padding. later the auth token expiry bug appeared. more padding padding.';
+  ingestChunks(store, 'n.md', [{ text: long, source: 'n.md', startLine: 1, endLine: 1, mtime: NOW, when: NOW }]);
+  const res = recall(store, 'auth token expiry', { now: NOW });
+  assert.match(res[0].snippet, /auth token expiry/);
 });
 
 test('semantic recall keeps a relevance floor (no whole-store dump on a miss)', () => {

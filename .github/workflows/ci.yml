@@ -35,5 +35,6 @@ jobs:
           node --check src/watch.js
           node --check src/pdf.js
           node --check src/extract.js
+          node --check src/proximity.js
       - name: Test
         run: npm test
