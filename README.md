@@ -77,6 +77,9 @@ npx engram status
 npx engram forget old-project
 ```
 
+> **New here?** [`examples/`](examples/) has three sample notes and a 30-second
+> walkthrough you can run against this repo — ingest → recall → temporal filter.
+
 ## How it works
 
 ```
@@ -167,8 +170,8 @@ Star/watch to follow along.
 Part of a small, local-first, zero-dependency toolkit for building AI agents:
 
 - 🧠 **engram** — a local, private memory layer for agents (and you) *(this repo)*
-- 🍳 **[skillet](https://github.com/USER/skillet)** — a package manager for agent skills
-- 🔭 **[tracelet](https://github.com/USER/tracelet)** — local DevTools to debug agent runs
+- 🍳 **[skillet](https://github.com/jnMetaCode/skillet)** — a package manager for agent skills
+- 🔭 **[tracelet](https://github.com/jnMetaCode/tracelet)** — local DevTools to debug agent runs
 
 ## License
 

@@ -35,10 +35,10 @@
   "dependencies": {},
   "repository": {
     "type": "git",
-    "url": "https://github.com/USER/engram.git"
+    "url": "https://github.com/jnMetaCode/engram.git"
   },
-  "homepage": "https://github.com/USER/engram#readme",
+  "homepage": "https://github.com/jnMetaCode/engram#readme",
   "bugs": {
-    "url": "https://github.com/USER/engram/issues"
+    "url": "https://github.com/jnMetaCode/engram/issues"
   }
 }

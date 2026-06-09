@@ -14,7 +14,7 @@ keep it that way.
 ## Dev loop
 
 ```bash
-git clone https://github.com/USER/engram && cd engram
+git clone https://github.com/jnMetaCode/engram && cd engram
 node src/cli.js ingest test/fixtures/notes --store /tmp/e.json
 node src/cli.js recall "pricing" --store /tmp/e.json
 npm test
