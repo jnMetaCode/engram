@@ -98,6 +98,28 @@ curl -s localhost:7077/recall   -d '{"query":"ship date"}'
 The open, local alternative to a hosted agent-memory service. Point your agent at
 it and its memories stay on your machine, with the same temporal ranking.
 
+### Use it as an MCP server (Claude, etc.)
+
+engram speaks the [Model Context Protocol](https://modelcontextprotocol.io) over
+stdio, so Claude Desktop / Claude Code can use your memory as a tool — `engram_recall`,
+`engram_remember`, `engram_status`. Add to `claude_desktop_config.json` (or a
+project `.mcp.json`):
+
+```json
+{
+  "mcpServers": {
+    "engram": {
+      "command": "npx",
+      "args": ["-y", "engram", "mcp"]
+    }
+  }
+}
+```
+
+Now the model can recall your notes and persist new memories mid-conversation —
+all locally. Zero dependencies, no SDK: it's a few hundred lines of pure Node
+implementing JSON-RPC over stdio (spec revision 2025-06-18).
+
 ## Optional: local embeddings (Ollama)
 
 engram never ships your data anywhere. For semantic recall it talks to a **local**
@@ -119,14 +141,15 @@ Without Ollama, engram still works great in lexical + temporal mode.
 | `engram ask <query>` | compose an answer from memory (needs Ollama) |
 | `engram status` | what's stored |
 | `engram forget <substr>` | remove memories by source |
-| `engram serve` | local memory API for agents |
+| `engram serve` | local memory API (HTTP) for agents |
+| `engram mcp` | run as an MCP server (stdio) for Claude/agents |
 
 ## Status
 
 Early MVP. Lexical + temporal recall, citations, ingest/forget, the local agent
-API, and optional Ollama embeddings/answers all work today. Roadmap: more file
-types (PDF/EPUB), incremental re-index on change, SQLite store for large vaults,
-an MCP server. Star/watch to follow along.
+API, an **MCP server** (stdio), and optional Ollama embeddings/answers all work
+today. Roadmap: more file types (PDF/EPUB), incremental re-index on change, and a
+SQLite store for large vaults. Star/watch to follow along.
 
 ## Sibling projects
 

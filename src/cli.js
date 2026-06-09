@@ -6,6 +6,8 @@ import { recall } from './recall.js';
 import { ollamaUp, embedOne, embedMany } from './embed.js';
 import { answer } from './ask.js';
 import { startServer } from './server.js';
+import { startMcp } from './mcp.js';
+import { parseSince } from './when.js';
 
 const TTY = process.stdout.isTTY && !process.env.NO_COLOR;
 const paint = (n) => (s) => (TTY ? `\x1b[${n}m${s}\x1b[0m` : s);
@@ -35,23 +37,6 @@ function parseArgs(argv) {
   return { flags, pos };
 }
 
-// Accept ISO dates and a few friendly relatives: 7d, today, yesterday, week, month.
-function parseSince(v) {
-  if (!v) return undefined;
-  const now = Date.now();
-  const DAY = 86400000;
-  const rel = { today: 0, yesterday: 1, week: 7, 'last-week': 7, month: 30, year: 365 };
-  if (v in rel) return new Date(now - rel[v] * DAY).toISOString();
-  const m = v.match(/^(\d+)\s*([dwmy])$/);
-  if (m) {
-    const mult = { d: 1, w: 7, m: 30, y: 365 }[m[2]];
-    return new Date(now - Number(m[1]) * mult * DAY).toISOString();
-  }
-  const t = Date.parse(v);
-  if (Number.isNaN(t)) throw new UserError(`could not parse date: ${v}`);
-  return new Date(t).toISOString();
-}
-
 const HELP = `${c.bold('engram')} — your local, private memory layer
 
 ${c.bold('Usage')}  engram <command> [args] [flags]
@@ -62,7 +47,8 @@ ${c.bold('Commands')}
   ${c.cyan('ask')} <query>          answer from memory (needs local Ollama)
   ${c.cyan('status')}               show what's stored
   ${c.cyan('forget')} <substr>      remove memories whose source matches
-  ${c.cyan('serve')}                start the local memory API (for agents)
+  ${c.cyan('serve')}                start the local memory API (HTTP, for agents)
+  ${c.cyan('mcp')}                  run as an MCP server over stdio (Claude/agents)
 
 ${c.bold('Flags')}
   --store <path>     store file (default: ${defaultStorePath()})
@@ -179,6 +165,11 @@ const commands = {
 
   serve(_args, flags) {
     startServer({ port: flags.port || 7077, storeFile: flags.store });
+  },
+
+  mcp(_args, flags) {
+    // stdio is the protocol channel here — do not print anything to stdout.
+    startMcp({ storeFile: flags.store });
   },
 };
 

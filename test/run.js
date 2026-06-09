@@ -13,6 +13,8 @@ import { buildIndex, scoreChunk } from '../src/bm25.js';
 import { cosine } from '../src/embed.js';
 import { recall } from '../src/recall.js';
 import { startServer } from '../src/server.js';
+import { createHandler } from '../src/mcp.js';
+import { spawn } from 'node:child_process';
 
 const NOTES = fileURLToPath(new URL('./fixtures/notes', import.meta.url));
 const NOW = '2026-06-10T00:00:00.000Z';
@@ -153,4 +155,92 @@ test('local API: remember -> recall -> stats', async (t) => {
 
   const st = await req(port, 'GET', '/stats');
   assert.equal(st.body.chunks, 1);
+});
+
+// ---------------------------------------------------------------------- mcp ---
+test('MCP handler: initialize / version negotiation / capabilities', async () => {
+  const handle = createHandler({ storeFile: tmpStore() });
+  const init = await handle({ jsonrpc: '2.0', id: 1, method: 'initialize', params: { protocolVersion: '2025-06-18', capabilities: {} } });
+  assert.equal(init.result.protocolVersion, '2025-06-18');
+  assert.deepEqual(init.result.capabilities, { tools: { listChanged: false } });
+  assert.equal(init.result.serverInfo.name, 'engram');
+  // unknown requested version -> server returns its latest
+  const init2 = await handle({ jsonrpc: '2.0', id: 1, method: 'initialize', params: { protocolVersion: '1999-01-01' } });
+  assert.equal(init2.result.protocolVersion, '2025-06-18');
+});
+
+test('MCP handler: notifications get no reply; ping replies empty', async () => {
+  const handle = createHandler({ storeFile: tmpStore() });
+  assert.equal(await handle({ jsonrpc: '2.0', method: 'notifications/initialized' }), null);
+  assert.equal(await handle({ jsonrpc: '2.0', method: 'notifications/cancelled', params: {} }), null);
+  const pong = await handle({ jsonrpc: '2.0', id: 9, method: 'ping' });
+  assert.deepEqual(pong, { jsonrpc: '2.0', id: 9, result: {} });
+});
+
+test('MCP handler: tools/list, remember, recall, errors', async () => {
+  const handle = createHandler({ storeFile: tmpStore() });
+
+  const list = await handle({ jsonrpc: '2.0', id: 2, method: 'tools/list', params: {} });
+  const names = list.result.tools.map((t) => t.name);
+  assert.deepEqual(names.sort(), ['engram_recall', 'engram_remember', 'engram_status']);
+  assert.equal(list.result.tools[0].inputSchema.type, 'object');
+
+  const rem = await handle({ jsonrpc: '2.0', id: 3, method: 'tools/call', params: { name: 'engram_remember', arguments: { text: 'We picked Postgres on 2026-05-01' } } });
+  assert.ok(!rem.result.isError);
+  assert.match(rem.result.content[0].text, /Remembered/);
+
+  const rec = await handle({ jsonrpc: '2.0', id: 4, method: 'tools/call', params: { name: 'engram_recall', arguments: { query: 'database choice postgres' } } });
+  assert.match(rec.result.content[0].text, /Postgres/);
+
+  // unknown tool -> JSON-RPC error
+  const unk = await handle({ jsonrpc: '2.0', id: 5, method: 'tools/call', params: { name: 'nope', arguments: {} } });
+  assert.equal(unk.error.code, -32602);
+
+  // tool ran but bad args -> isError result (not a protocol error)
+  const bad = await handle({ jsonrpc: '2.0', id: 6, method: 'tools/call', params: { name: 'engram_recall', arguments: {} } });
+  assert.equal(bad.result.isError, true);
+
+  // unknown method -> method not found
+  const nf = await handle({ jsonrpc: '2.0', id: 7, method: 'does/not/exist' });
+  assert.equal(nf.error.code, -32601);
+});
+
+test('MCP stdio: real spawned process handshake + tools/list (pure-JSON stdout)', async () => {
+  const store = tmpStore();
+  const cli = fileURLToPath(new URL('../src/cli.js', import.meta.url));
+  const child = spawn(process.execPath, [cli, 'mcp'], {
+    env: { ...process.env, ENGRAM_STORE: store, NO_COLOR: '1' },
+    stdio: ['pipe', 'pipe', 'pipe'],
+  });
+  const lines = [];
+  let buf = '';
+  const got = new Promise((resolve, reject) => {
+    child.stdout.setEncoding('utf8');
+    child.stdout.on('data', (d) => {
+      buf += d;
+      let nl;
+      while ((nl = buf.indexOf('\n')) >= 0) {
+        const line = buf.slice(0, nl).trim();
+        buf = buf.slice(nl + 1);
+        if (line) {
+          lines.push(JSON.parse(line)); // throws if stdout isn't pure JSON-RPC
+          if (lines.length >= 2) resolve();
+        }
+      }
+    });
+    child.on('error', reject);
+    setTimeout(() => reject(new Error('timeout waiting for MCP responses')), 5000);
+  });
+
+  child.stdin.write(JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'initialize', params: { protocolVersion: '2025-06-18', capabilities: {}, clientInfo: { name: 't', version: '1' } } }) + '\n');
+  child.stdin.write(JSON.stringify({ jsonrpc: '2.0', id: 2, method: 'tools/list', params: {} }) + '\n');
+
+  await got;
+  child.kill();
+
+  const init = lines.find((l) => l.id === 1);
+  assert.equal(init.result.protocolVersion, '2025-06-18');
+  assert.equal(init.result.serverInfo.name, 'engram');
+  const tl = lines.find((l) => l.id === 2);
+  assert.ok(tl.result.tools.some((t) => t.name === 'engram_recall'));
 });

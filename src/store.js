@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { tokenize, termFreq } from './text.js';
+import { extractDate } from './chunk.js';
 
 export function defaultStorePath() {
   return process.env.ENGRAM_STORE || path.join(os.homedir(), '.engram', 'store.json');
@@ -63,6 +64,17 @@ export function ingestChunks(store, source, rawChunks) {
     added++;
   }
   return added;
+}
+
+// Store a single free-form memory (used by the HTTP API and the MCP server).
+export function rememberText(store, { text, source = 'api', date } = {}) {
+  const d = date || extractDate(text);
+  const when = date ? date + 'T00:00:00.000Z' : new Date().toISOString();
+  const key = `${source}:${when}:${String(text).slice(0, 24)}`;
+  ingestChunks(store, key, [
+    { text, source, startLine: 1, endLine: 1, mtime: new Date().toISOString(), date: d, when },
+  ]);
+  return { chunks: store.chunks.length };
 }
 
 export function forgetSource(store, needle) {

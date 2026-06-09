@@ -1,9 +1,8 @@
 // A tiny LOCAL HTTP API so your AI agents can remember and recall — the
 // open, local alternative to a hosted agent-memory service. Binds to 127.0.0.1.
 import http from 'node:http';
-import { loadStore, saveStore, ingestChunks, stats } from './store.js';
+import { loadStore, saveStore, rememberText, stats } from './store.js';
 import { recall } from './recall.js';
-import { extractDate } from './chunk.js';
 
 function readJson(req, limit = 5 * 1024 * 1024) {
   return new Promise((resolve, reject) => {
@@ -38,13 +37,9 @@ export function startServer({ port = 7077, storeFile, host = '127.0.0.1' } = {})
         const { text, source = 'api', date } = await readJson(req);
         if (!text) return send(res, 400, { error: 'text is required' });
         const store = loadStore(storeFile);
-        const when = (date || extractDate(text));
-        ingestChunks(store, `${source}:${when || 'now'}:${text.slice(0, 24)}`, [
-          { text, source, startLine: 1, endLine: 1, mtime: new Date().toISOString(),
-            date: date || extractDate(text), when: (date ? date + 'T00:00:00.000Z' : new Date().toISOString()) },
-        ]);
+        const { chunks } = rememberText(store, { text, source, date });
         saveStore(store, storeFile);
-        return send(res, 200, { ok: true, chunks: store.chunks.length });
+        return send(res, 200, { ok: true, chunks });
       }
       if (req.method === 'POST' && url.pathname === '/recall') {
         const { query, limit, since, until } = await readJson(req);
