@@ -24,6 +24,7 @@ export async function answer(query, passages, { host = DEFAULT_HOST, model = DEF
         { role: 'user', content: user },
       ],
     }),
+    signal: AbortSignal.timeout(120000),
   });
   if (!r.ok) throw new Error(`Ollama chat failed (${r.status}). Is the model "${model}" pulled?`);
   const j = await r.json();

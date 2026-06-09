@@ -8,7 +8,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { tokenize } from '../src/text.js';
 import { chunkText, extractDate, walkFiles, chunkFile } from '../src/chunk.js';
-import { loadStore, ingestChunks, changedFiles, forgetSource, stats } from '../src/store.js';
+import { loadStore, ingestChunks, changedFiles, rememberText, forgetSource, stats } from '../src/store.js';
 import { buildIndex, scoreChunk } from '../src/bm25.js';
 import { cosine } from '../src/embed.js';
 import { recall } from '../src/recall.js';
@@ -33,13 +33,22 @@ test('tokenize drops stopwords and stems consistently', () => {
   // singular and plural collapse to the same stem (so queries match either form)
   assert.equal(tokenize('decision')[0], tokenize('decisions')[0]);
   assert.equal(tokenize('token')[0], tokenize('tokens')[0]);
+  assert.equal(tokenize('cache')[0], tokenize('caches')[0]); // was broken pre-fix
+  assert.equal(tokenize('class')[0], tokenize('classes')[0]);
+  // words ending in "ss" are preserved, not over-stemmed
+  assert.equal(tokenize('class')[0], 'class');
+  assert.equal(tokenize('process')[0], 'process');
   assert.ok(t.length >= 3);
 });
 
-test('extractDate finds ISO and named dates', () => {
+test('extractDate finds ISO and named dates, rejects month-prefix false positives', () => {
   assert.equal(extractDate('met on 2026-05-20 about x'), '2026-05-20');
   assert.equal(extractDate('see May 3, 2026 notes'), '2026-05-03');
+  assert.equal(extractDate('September 5, 2026'), '2026-09-05');
   assert.equal(extractDate('no date here'), null);
+  // not real months — must NOT parse as May/March
+  assert.equal(extractDate('Mayhem 3, 2026 happened'), null);
+  assert.equal(extractDate('marathon 7, 2026 route'), null);
 });
 
 test('chunkText tracks line ranges', () => {
@@ -95,6 +104,28 @@ test('temporal: --since filters out older memories', () => {
   assert.equal(res.length, 0); // both pricing notes are older than a week
   const auth = recall(store, 'authentication', { now: NOW, since });
   assert.ok(auth.length >= 1); // auth-bug is 2026-06-05
+});
+
+test('semantic recall keeps a relevance floor (no whole-store dump on a miss)', () => {
+  const store = { version: 1, chunks: [] };
+  ingestChunks(store, 'a.md', [{ text: 'apple pie recipe', source: 'a.md', startLine: 1, endLine: 1, mtime: NOW, when: NOW }]);
+  store.chunks[0].embedding = [1, 0];
+  // query with no lexical match and an orthogonal embedding -> nothing relevant
+  const res = recall(store, 'zzzz nonsense', { now: NOW, queryEmbedding: [0, 1] });
+  assert.equal(res.length, 0);
+});
+
+test('recall ignores a NaN/invalid limit and uses the default', () => {
+  const store = freshStore();
+  assert.ok(recall(store, 'pricing', { now: NOW, limit: NaN }).length > 0);
+  assert.ok(recall(store, 'pricing', { now: NOW, limit: 0 }).length > 0);
+});
+
+test('remember is idempotent — identical text is not stored twice', () => {
+  const store = { version: 1, chunks: [] };
+  rememberText(store, { text: 'Ship date is 2026-07-01', source: 'agent' });
+  rememberText(store, { text: 'Ship date is 2026-07-01', source: 'agent' });
+  assert.equal(store.chunks.length, 1);
 });
 
 test('semantic recall uses embeddings when present', () => {

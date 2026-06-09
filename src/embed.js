@@ -31,6 +31,7 @@ export async function embedOne(text, { host = DEFAULT_HOST, model = DEFAULT_MODE
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ model, prompt: text }),
+    signal: AbortSignal.timeout(30000),
   });
   if (!r.ok) throw new Error(`Ollama embeddings failed (${r.status}). Is the model "${model}" pulled?`);
   const j = await r.json();

@@ -10,13 +10,21 @@ const STOPWORDS = new Set(
     .split(/\s+/)
 );
 
-// Very light suffix stemmer — enough to match plurals/verb forms without a dep.
+// Light suffix stemmer — enough to match plural/verb forms without a dependency.
+// Plural handling follows Porter step 1a so singular/plural pairs collapse to the
+// same stem (cache/caches, class/classes, address/addresses) while words ending
+// in "ss" are preserved (class, process).
 function stem(w) {
   if (w.length <= 3) return w;
-  return w
-    .replace(/(ing|edly|edly|ements|ement|ations|ation|ies|ied|ily|ness|ments|ment)$/, '')
-    .replace(/(ed|es|s)$/, '')
-    .replace(/(.)\1$/, '$1'); // collapse a trailing double letter from stemming
+  if (/sses$/.test(w)) w = w.slice(0, -2); // processes -> process
+  else if (/ies$/.test(w)) w = w.slice(0, -2); // queries -> queri
+  else if (/ss$/.test(w)) {
+    /* keep: class, process, address */
+  } else if (/s$/.test(w)) w = w.slice(0, -1); // tokens -> token, caches -> cache
+  // common verb/noun suffixes (longest first); applied to both query and doc, so
+  // it only needs to be self-consistent, not linguistically perfect.
+  w = w.replace(/(ization|ational|fulness|ousness|iveness|ation|ements|ement|ments|ment|ness|edly|ingly|ing|ed)$/, '');
+  return w;
 }
 
 export function tokenize(text, { stemming = true } = {}) {

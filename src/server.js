@@ -52,8 +52,12 @@ export function startServer({ port = 7077, storeFile, host = '127.0.0.1' } = {})
       return send(res, 400, { error: String(e.message) });
     }
   });
+  const local = host === '127.0.0.1' || host === 'localhost' || host === '::1';
   server.listen(port, host, () => {
-    console.log(`engram memory API → http://${host}:${port}  (local only)`);
+    console.log(`engram memory API → http://${host}:${port}  ${local ? '(local only)' : ''}`);
+    if (!local) {
+      console.warn(`⚠ WARNING: bound to ${host} — this exposes an UNAUTHENTICATED read/write memory API on your network.`);
+    }
     console.log(`  POST /remember {text}   POST /recall {query}   GET /stats`);
   });
   return server;

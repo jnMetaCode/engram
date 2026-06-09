@@ -30,10 +30,12 @@ export function walkFiles(targets, exts = DEFAULT_EXTS) {
   return files;
 }
 
-const MONTHS = {
-  jan: 1, feb: 2, mar: 3, apr: 4, may: 5, jun: 6,
-  jul: 7, aug: 8, sep: 9, oct: 10, nov: 11, dec: 12,
-};
+const MONTH_ABBR = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+const MONTHS = {};
+const FULL = ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december'];
+MONTH_ABBR.forEach((m, i) => (MONTHS[m] = i + 1));
+FULL.forEach((m, i) => (MONTHS[m] = i + 1));
+MONTHS.sept = 9; // common 4-letter abbreviation
 
 // Find the first plausible date in a string; return ISO yyyy-mm-dd or null.
 export function extractDate(text) {
@@ -44,8 +46,13 @@ export function extractDate(text) {
   }
   const named = text.match(/\b([A-Za-z]{3,9})\.?\s+(\d{1,2}),?\s+(\d{4})\b/);
   if (named) {
-    const mo = MONTHS[named[1].slice(0, 3).toLowerCase()];
-    if (mo) return `${named[3]}-${String(mo).padStart(2, '0')}-${String(named[2]).padStart(2, '0')}`;
+    // Require an exact month name/abbreviation — not just a 3-letter prefix, so
+    // "Mayhem 3 2026" or "marathon 7, 2026" don't parse as dates.
+    const mo = MONTHS[named[1].toLowerCase()];
+    const day = +named[2];
+    if (mo && day >= 1 && day <= 31) {
+      return `${named[3]}-${String(mo).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    }
   }
   return null;
 }

@@ -7,7 +7,9 @@ import { cosine } from './embed.js';
 const DAY = 86400000;
 
 function recency(whenIso, nowMs, halfLifeDays) {
-  const age = Math.max(0, nowMs - Date.parse(whenIso || 0));
+  const t = whenIso ? Date.parse(whenIso) : NaN;
+  if (!Number.isFinite(t)) return 0; // unknown time -> no recency boost (not "year 2000")
+  const age = Math.max(0, nowMs - t);
   return Math.pow(0.5, age / DAY / halfLifeDays);
 }
 
@@ -36,14 +38,18 @@ function normalize(values) {
  *                         weights:{lex,time,sem} }
  */
 export function recall(store, query, opts = {}) {
-  const limit = opts.limit ?? 8;
+  const limit = Number.isFinite(opts.limit) && opts.limit > 0 ? Math.floor(opts.limit) : 8;
   const nowMs = opts.now ? Date.parse(opts.now) : Date.now();
   const halfLifeDays = opts.halfLifeDays ?? 60;
   const sinceMs = opts.since ? Date.parse(opts.since) : -Infinity;
   const untilMs = opts.until ? Date.parse(opts.until) : Infinity;
 
+  const hasWindow = Number.isFinite(sinceMs) || Number.isFinite(untilMs);
   let chunks = store.chunks.filter((c) => {
-    const w = Date.parse(c.when || c.mtime || 0);
+    if (!hasWindow) return true;
+    const raw = c.when || c.mtime;
+    const w = raw ? Date.parse(raw) : NaN;
+    if (!Number.isFinite(w)) return false; // can't place it in time -> exclude from a time-filtered query
     return w >= sinceMs && w <= untilMs;
   });
   if (chunks.length === 0) return [];
@@ -74,7 +80,9 @@ export function recall(store, query, opts = {}) {
   }));
 
   return scored
-    .filter((r) => r.matched || haveEmb)
+    // keep a relevance floor even in semantic mode, so a non-matching query
+    // doesn't return the whole store
+    .filter((r) => r.matched || (haveEmb && r.semantic > 0.2))
     .sort((a, b) => b.score - a.score)
     .slice(0, limit)
     .map((r) => ({

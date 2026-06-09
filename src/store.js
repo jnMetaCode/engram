@@ -53,13 +53,17 @@ export function makeChunkRecord(c) {
   };
 }
 
-// Replace all chunks from a given source (idempotent re-ingest).
+// Replace all chunks from a given source (idempotent re-ingest), and never store
+// the same content (same id) twice — so repeated `remember` of identical text
+// doesn't accumulate duplicates.
 export function ingestChunks(store, source, rawChunks) {
   store.chunks = store.chunks.filter((c) => c.source !== source);
+  const seen = new Set(store.chunks.map((c) => c.id));
   let added = 0;
   for (const c of rawChunks) {
     const rec = makeChunkRecord(c);
-    if (rec.len === 0) continue;
+    if (rec.len === 0 || seen.has(rec.id)) continue;
+    seen.add(rec.id);
     store.chunks.push(rec);
     added++;
   }
