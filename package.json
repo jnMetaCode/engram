@@ -1,0 +1,44 @@
+{
+  "name": "engram",
+  "version": "0.1.0",
+  "description": "Your local, private memory layer. Index your notes and files, then recall anything with citations and temporal reasoning — 100% on your machine.",
+  "type": "module",
+  "bin": {
+    "engram": "./src/cli.js"
+  },
+  "scripts": {
+    "test": "node --test test/run.js"
+  },
+  "files": [
+    "src",
+    "README.md"
+  ],
+  "keywords": [
+    "ai",
+    "memory",
+    "second-brain",
+    "local-first",
+    "privacy",
+    "rag",
+    "semantic-search",
+    "bm25",
+    "agents",
+    "agent-memory",
+    "notes",
+    "ollama",
+    "cli"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "license": "MIT",
+  "dependencies": {},
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/USER/engram.git"
+  },
+  "homepage": "https://github.com/USER/engram#readme",
+  "bugs": {
+    "url": "https://github.com/USER/engram/issues"
+  }
+}

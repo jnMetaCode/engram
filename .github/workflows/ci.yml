@@ -1,0 +1,33 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        node: [18, 20, 22]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+      - name: Syntax check
+        run: |
+          node --check src/cli.js
+          node --check src/store.js
+          node --check src/chunk.js
+          node --check src/text.js
+          node --check src/bm25.js
+          node --check src/recall.js
+          node --check src/embed.js
+          node --check src/ask.js
+          node --check src/server.js
+      - name: Test
+        run: npm test

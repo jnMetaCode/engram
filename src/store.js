@@ -1,0 +1,83 @@
+// The memory store is a single local JSON file. Nothing leaves your machine.
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { tokenize, termFreq } from './text.js';
+
+export function defaultStorePath() {
+  return process.env.ENGRAM_STORE || path.join(os.homedir(), '.engram', 'store.json');
+}
+
+export function loadStore(file = defaultStorePath()) {
+  try {
+    const s = JSON.parse(fs.readFileSync(file, 'utf8'));
+    s.chunks ||= [];
+    return s;
+  } catch (e) {
+    if (e.code === 'ENOENT') return { version: 1, updatedAt: null, chunks: [] };
+    throw e;
+  }
+}
+
+export function saveStore(store, file = defaultStorePath()) {
+  store.updatedAt = new Date().toISOString();
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  fs.writeFileSync(file, JSON.stringify(store));
+}
+
+// FNV-1a — a tiny stable hash so re-ingesting identical content is idempotent.
+function hash(str) {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < str.length; i++) {
+    h ^= str.charCodeAt(i);
+    h = Math.imul(h, 0x01000193);
+  }
+  return (h >>> 0).toString(16).padStart(8, '0');
+}
+
+export function makeChunkRecord(c) {
+  const tokens = tokenize(c.text);
+  return {
+    id: hash(c.source + ':' + c.startLine + ':' + c.text.slice(0, 64)),
+    source: c.source,
+    startLine: c.startLine,
+    endLine: c.endLine,
+    mtime: c.mtime,
+    date: c.date || null,
+    when: c.when,
+    text: c.text,
+    tf: termFreq(tokens),
+    len: tokens.length,
+    embedding: c.embedding || null,
+  };
+}
+
+// Replace all chunks from a given source (idempotent re-ingest).
+export function ingestChunks(store, source, rawChunks) {
+  store.chunks = store.chunks.filter((c) => c.source !== source);
+  let added = 0;
+  for (const c of rawChunks) {
+    const rec = makeChunkRecord(c);
+    if (rec.len === 0) continue;
+    store.chunks.push(rec);
+    added++;
+  }
+  return added;
+}
+
+export function forgetSource(store, needle) {
+  const before = store.chunks.length;
+  store.chunks = store.chunks.filter((c) => !c.source.includes(needle));
+  return before - store.chunks.length;
+}
+
+export function stats(store) {
+  const sources = new Set(store.chunks.map((c) => c.source));
+  const withEmbeddings = store.chunks.filter((c) => c.embedding).length;
+  return {
+    chunks: store.chunks.length,
+    sources: sources.size,
+    withEmbeddings,
+    updatedAt: store.updatedAt,
+  };
+}
