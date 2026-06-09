@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import fs from 'node:fs';
-import { loadStore, saveStore, ingestChunks, forgetSource, stats, defaultStorePath } from './store.js';
+import { loadStore, saveStore, ingestChunks, changedFiles, forgetSource, stats, defaultStorePath } from './store.js';
 import { walkFiles, chunkFile } from './chunk.js';
 import { recall } from './recall.js';
 import { ollamaUp, embedOne, embedMany } from './embed.js';
@@ -25,6 +25,7 @@ function parseArgs(argv) {
     else if (a === '--since') flags.since = argv[++i];
     else if (a === '--until') flags.until = argv[++i];
     else if (a === '--embed') flags.embed = true;
+    else if (a === '--force' || a === '-f') flags.force = true;
     else if (a === '--semantic' || a === '-s') flags.semantic = true;
     else if (a === '--json') flags.json = true;
     else if (a === '--port') flags.port = Number(argv[++i]);
@@ -56,6 +57,7 @@ ${c.bold('Flags')}
   --since <when>     filter: ISO date | 7d | today | yesterday | week | month
   --until <when>     filter upper bound
   --embed            compute local embeddings on ingest (needs Ollama)
+  -f, --force        re-ingest all files, even unchanged ones
   -s, --semantic     use embeddings for recall (needs Ollama)
   --json             machine-readable output
   --host/--model     Ollama host / model overrides
@@ -82,8 +84,13 @@ const commands = {
       if (!useEmbed) log(c.yellow('! Ollama not reachable — ingesting without embeddings'));
     }
 
+    // Incremental: skip files whose mtime is unchanged since last ingest.
+    const { changed, unchanged } = flags.force
+      ? { changed: files, unchanged: [] }
+      : changedFiles(store, files.map((f) => [f, fs.statSync(f).mtime.toISOString()]));
+
     let total = 0;
-    for (const f of files) {
+    for (const f of changed) {
       const { chunks } = chunkFile(f);
       if (useEmbed) {
         const vecs = await embedMany(chunks.map((ch) => ch.text), { host: flags.host, model: flags.model });
@@ -92,7 +99,9 @@ const commands = {
       total += ingestChunks(store, f, chunks);
     }
     saveStore(store, file);
-    log(c.green('✓'), `ingested ${total} chunks from ${files.length} file(s)${useEmbed ? ' (with embeddings)' : ''}`);
+    const skipped = unchanged.length ? `, ${unchanged.length} unchanged (skipped)` : '';
+    log(c.green('✓'), `ingested ${total} chunks from ${changed.length} file(s)${useEmbed ? ' (with embeddings)' : ''}${skipped}`);
+    if (!changed.length && unchanged.length) log(c.dim('  nothing changed — use --force to re-ingest everything'));
     log(c.dim(`  store: ${file}`));
   },
 

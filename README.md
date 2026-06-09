@@ -146,10 +146,11 @@ Without Ollama, engram still works great in lexical + temporal mode.
 
 ## Status
 
-Early MVP. Lexical + temporal recall, citations, ingest/forget, the local agent
+Early MVP. Lexical + temporal recall, citations, ingest/forget, incremental
+re-index (unchanged files are skipped — `--force` to override), the local agent
 API, an **MCP server** (stdio), and optional Ollama embeddings/answers all work
-today. Roadmap: more file types (PDF/EPUB), incremental re-index on change, and a
-SQLite store for large vaults. Star/watch to follow along.
+today. Roadmap: more file types (PDF/EPUB) and a SQLite store for large vaults.
+Star/watch to follow along.
 
 ## Sibling projects
 

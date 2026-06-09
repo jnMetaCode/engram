@@ -77,6 +77,21 @@ export function rememberText(store, { text, source = 'api', date } = {}) {
   return { chunks: store.chunks.length };
 }
 
+// Split a set of files into those that changed since last ingest and those that
+// didn't, by comparing each file's mtime to the stored chunks' mtime. Pure +
+// testable; powers incremental re-index (skip unchanged files).
+// @param fileMtimes Iterable<[source, mtimeIso]>
+export function changedFiles(store, fileMtimes) {
+  const prev = new Map();
+  for (const c of store.chunks) prev.set(c.source, c.mtime);
+  const changed = [];
+  const unchanged = [];
+  for (const [source, mtime] of fileMtimes) {
+    (prev.has(source) && prev.get(source) === mtime ? unchanged : changed).push(source);
+  }
+  return { changed, unchanged };
+}
+
 export function forgetSource(store, needle) {
   const before = store.chunks.length;
   store.chunks = store.chunks.filter((c) => !c.source.includes(needle));

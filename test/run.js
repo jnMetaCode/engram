@@ -8,7 +8,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { tokenize } from '../src/text.js';
 import { chunkText, extractDate, walkFiles, chunkFile } from '../src/chunk.js';
-import { loadStore, ingestChunks, forgetSource, stats } from '../src/store.js';
+import { loadStore, ingestChunks, changedFiles, forgetSource, stats } from '../src/store.js';
 import { buildIndex, scoreChunk } from '../src/bm25.js';
 import { cosine } from '../src/embed.js';
 import { recall } from '../src/recall.js';
@@ -118,6 +118,31 @@ test('ingest is idempotent per source; forget removes', () => {
   const removed = forgetSource(store, 'auth-bug');
   assert.ok(removed >= 1);
   assert.equal(stats(store).chunks, n1 - removed);
+});
+
+// ------------------------------------------------- incremental re-index ---
+test('changedFiles splits by mtime; unchanged files are skipped', () => {
+  const store = { version: 1, chunks: [] };
+  ingestChunks(store, 'a.md', [{ text: 'alpha', source: 'a.md', startLine: 1, endLine: 1, mtime: '2026-01-01T00:00:00.000Z', when: '2026-01-01T00:00:00.000Z' }]);
+  ingestChunks(store, 'b.md', [{ text: 'beta', source: 'b.md', startLine: 1, endLine: 1, mtime: '2026-01-01T00:00:00.000Z', when: '2026-01-01T00:00:00.000Z' }]);
+
+  const r = changedFiles(store, [
+    ['a.md', '2026-01-01T00:00:00.000Z'], // same mtime -> unchanged
+    ['b.md', '2026-02-02T00:00:00.000Z'], // newer -> changed
+    ['c.md', '2026-03-03T00:00:00.000Z'], // never seen -> changed
+  ]);
+  assert.deepEqual(r.unchanged, ['a.md']);
+  assert.deepEqual(r.changed.sort(), ['b.md', 'c.md']);
+});
+
+test('incremental ingest of the fixtures: second pass skips everything', () => {
+  const store = freshStore(); // ingests all 3 fixtures once
+  const before = store.chunks.length;
+  const mtimes = walkFiles([NOTES]).map((f) => [f, fs.statSync(f).mtime.toISOString()]);
+  const { changed, unchanged } = changedFiles(store, mtimes);
+  assert.equal(changed.length, 0);
+  assert.equal(unchanged.length, 3);
+  assert.equal(store.chunks.length, before); // nothing re-ingested
 });
 
 // ------------------------------------------------------------------- server ---
