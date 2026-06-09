@@ -14,6 +14,8 @@ import { cosine } from '../src/embed.js';
 import { recall } from '../src/recall.js';
 import { startServer } from '../src/server.js';
 import { createHandler } from '../src/mcp.js';
+import { ingestPaths } from '../src/ingest.js';
+import { startWatch, debounce } from '../src/watch.js';
 import { spawn } from 'node:child_process';
 
 const NOTES = fileURLToPath(new URL('./fixtures/notes', import.meta.url));
@@ -174,6 +176,50 @@ test('incremental ingest of the fixtures: second pass skips everything', () => {
   assert.equal(changed.length, 0);
   assert.equal(unchanged.length, 3);
   assert.equal(store.chunks.length, before); // nothing re-ingested
+});
+
+// ----------------------------------------------------------- ingest/watch ---
+test('ingestPaths indexes once, then is incremental', async () => {
+  const dir = fs.mkdtempSync(join(os.tmpdir(), 'engram-ing-'));
+  fs.writeFileSync(join(dir, 'a.md'), '# note\n\nthe quarterly plan is due 2026-05-01\n');
+  const store = tmpStore();
+  const first = await ingestPaths(store, [dir], {});
+  assert.equal(first.files, 1);
+  assert.ok(first.chunks >= 1);
+  const second = await ingestPaths(store, [dir], {});
+  assert.equal(second.changed, 0); // unchanged -> skipped
+  assert.equal(second.chunks, 0);
+  fs.rmSync(dir, { recursive: true, force: true });
+});
+
+test('debounce collapses rapid calls into one', async () => {
+  let n = 0;
+  const d = debounce(() => n++, 40);
+  d(); d(); d();
+  await new Promise((r) => setTimeout(r, 80));
+  assert.equal(n, 1);
+});
+
+test('watch re-indexes a file after it changes', async () => {
+  const dir = fs.mkdtempSync(join(os.tmpdir(), 'engram-watch-'));
+  fs.writeFileSync(join(dir, 'note.md'), '# first\n\noriginal content about apples\n');
+  const store = tmpStore();
+  const w = await startWatch(store, [dir], {}, { debounceMs: 50, pollMs: 150 });
+  assert.ok(w.initial.chunks >= 1);
+
+  // modify the file; watcher should pick it up
+  await new Promise((r) => setTimeout(r, 50));
+  fs.writeFileSync(join(dir, 'note.md'), '# first\n\nnow it mentions bananas and oranges instead\n');
+
+  let found = false;
+  for (let i = 0; i < 40 && !found; i++) {
+    await new Promise((r) => setTimeout(r, 100));
+    const res = recall(loadStore(store), 'bananas oranges', { now: NOW });
+    found = res.length > 0;
+  }
+  w.close();
+  fs.rmSync(dir, { recursive: true, force: true });
+  assert.ok(found, 'watch should have re-indexed the changed file');
 });
 
 // ------------------------------------------------------------------- server ---

@@ -31,5 +31,7 @@ jobs:
           node --check src/server.js
           node --check src/mcp.js
           node --check src/when.js
+          node --check src/ingest.js
+          node --check src/watch.js
       - name: Test
         run: npm test

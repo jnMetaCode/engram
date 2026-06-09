@@ -55,6 +55,9 @@ so you can trust it and jump to the source.
 # index some notes (markdown, txt, org, rst …)
 npx engram ingest ~/Documents/notes
 
+# …or keep it live — re-indexes automatically as you edit
+npx engram watch ~/Documents/notes
+
 # recall — lexical + temporal, fully offline
 npx engram recall "postgres migration plan"
 npx engram recall "standup notes" --since 7d --limit 5
@@ -137,6 +140,7 @@ Without Ollama, engram still works great in lexical + temporal mode.
 | | |
 | --- | --- |
 | `engram ingest <path...>` | index files/folders (`--embed` for semantic) |
+| `engram watch <path...>` | index, then auto-reindex on change (live memory) |
 | `engram recall <query>` | cited passages (`--since`, `--until`, `--limit`, `--semantic`) |
 | `engram ask <query>` | compose an answer from memory (needs Ollama) |
 | `engram status` | what's stored |
@@ -147,9 +151,8 @@ Without Ollama, engram still works great in lexical + temporal mode.
 ## Status
 
 Early MVP. Lexical + temporal recall, citations, ingest/forget, incremental
-re-index (unchanged files are skipped — `--force` to override), the local agent
-API, an **MCP server** (stdio), and optional Ollama embeddings/answers all work
-today. Roadmap: more file types (PDF/EPUB) and a SQLite store for large vaults.
+re-index, **live `watch` mode** (auto-reindex on change), the local agent API, an
+**MCP server** (stdio), and optional Ollama embeddings/answers all work today. Roadmap: more file types (PDF/EPUB) and a SQLite store for large vaults.
 Star/watch to follow along.
 
 ## Sibling projects

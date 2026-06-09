@@ -1,12 +1,13 @@
 #!/usr/bin/env node
 import fs from 'node:fs';
-import { loadStore, saveStore, ingestChunks, changedFiles, forgetSource, stats, defaultStorePath } from './store.js';
-import { walkFiles, chunkFile } from './chunk.js';
+import { loadStore, saveStore, forgetSource, stats, defaultStorePath } from './store.js';
 import { recall } from './recall.js';
-import { ollamaUp, embedOne, embedMany } from './embed.js';
+import { ollamaUp, embedOne } from './embed.js';
 import { answer } from './ask.js';
 import { startServer } from './server.js';
 import { startMcp } from './mcp.js';
+import { ingestPaths } from './ingest.js';
+import { startWatch } from './watch.js';
 import { parseSince } from './when.js';
 
 const TTY = process.stdout.isTTY && !process.env.NO_COLOR;
@@ -44,6 +45,7 @@ ${c.bold('Usage')}  engram <command> [args] [flags]
 
 ${c.bold('Commands')}
   ${c.cyan('ingest')} <path...>     index files/folders into memory (md, txt, …)
+  ${c.cyan('watch')} <path...>      index now, then auto-reindex on change (live memory)
   ${c.cyan('recall')} <query>       find relevant passages with citations
   ${c.cyan('ask')} <query>          answer from memory (needs local Ollama)
   ${c.cyan('status')}               show what's stored
@@ -74,35 +76,26 @@ const commands = {
   async ingest(paths, flags) {
     if (!paths.length) throw new UserError('usage: engram ingest <path...>');
     const file = flags.store || defaultStorePath();
-    const store = loadStore(file);
-    const files = walkFiles(paths);
-    if (!files.length) throw new UserError('no supported files found (md, markdown, txt, text, org, rst)');
-
-    let useEmbed = false;
-    if (flags.embed) {
-      useEmbed = await ollamaUp(flags.host);
-      if (!useEmbed) log(c.yellow('! Ollama not reachable — ingesting without embeddings'));
-    }
-
-    // Incremental: skip files whose mtime is unchanged since last ingest.
-    const { changed, unchanged } = flags.force
-      ? { changed: files, unchanged: [] }
-      : changedFiles(store, files.map((f) => [f, fs.statSync(f).mtime.toISOString()]));
-
-    let total = 0;
-    for (const f of changed) {
-      const { chunks } = chunkFile(f);
-      if (useEmbed) {
-        const vecs = await embedMany(chunks.map((ch) => ch.text), { host: flags.host, model: flags.model });
-        chunks.forEach((ch, i) => (ch.embedding = vecs[i]));
-      }
-      total += ingestChunks(store, f, chunks);
-    }
-    saveStore(store, file);
-    const skipped = unchanged.length ? `, ${unchanged.length} unchanged (skipped)` : '';
-    log(c.green('✓'), `ingested ${total} chunks from ${changed.length} file(s)${useEmbed ? ' (with embeddings)' : ''}${skipped}`);
-    if (!changed.length && unchanged.length) log(c.dim('  nothing changed — use --force to re-ingest everything'));
+    const r = await ingestPaths(file, paths, { force: flags.force, embed: flags.embed, host: flags.host, model: flags.model });
+    if (!r.files) throw new UserError('no supported files found (md, markdown, txt, text, org, rst)');
+    if (flags.embed && !r.embedded) log(c.yellow('! Ollama not reachable — ingested without embeddings'));
+    const skipped = r.unchanged ? `, ${r.unchanged} unchanged (skipped)` : '';
+    log(c.green('✓'), `ingested ${r.chunks} chunks from ${r.changed} file(s)${r.embedded ? ' (with embeddings)' : ''}${skipped}`);
+    if (!r.changed && r.unchanged) log(c.dim('  nothing changed — use --force to re-ingest everything'));
     log(c.dim(`  store: ${file}`));
+  },
+
+  async watch(paths, flags) {
+    if (!paths.length) throw new UserError('usage: engram watch <path...>');
+    const file = flags.store || defaultStorePath();
+    const { initial } = await startWatch(
+      file,
+      paths,
+      { force: false, embed: flags.embed, host: flags.host, model: flags.model },
+      { log: (m) => log(c.cyan('•'), m) }
+    );
+    log(c.green('✓'), `watching ${paths.join(', ')} — indexed ${initial.chunks} chunk(s) from ${initial.changed} changed file(s)`);
+    log(c.dim('  re-indexing on change… Ctrl-C to stop'));
   },
 
   async recall(words, flags) {
