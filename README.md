@@ -128,6 +128,14 @@ API, and optional Ollama embeddings/answers all work today. Roadmap: more file
 types (PDF/EPUB), incremental re-index on change, SQLite store for large vaults,
 an MCP server. Star/watch to follow along.
 
+## Sibling projects
+
+Part of a small, local-first, zero-dependency toolkit for building AI agents:
+
+- 🧠 **engram** — a local, private memory layer for agents (and you) *(this repo)*
+- 🍳 **[skillet](https://github.com/USER/skillet)** — a package manager for agent skills
+- 🔭 **[tracelet](https://github.com/USER/tracelet)** — local DevTools to debug agent runs
+
 ## License
 
 MIT — see [LICENSE](LICENSE).
