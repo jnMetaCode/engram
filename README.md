@@ -12,8 +12,7 @@ npx @jnmetacode/engram ingest ~/notes
 npx @jnmetacode/engram recall "what did I decide about pricing"
 ```
 
-<!-- TODO: replace with a real screen recording before launch -->
-<!-- ![engram demo](docs/demo.gif) -->
+![engram demo — ingest, recall with citations, time-aware filtering](docs/demo.gif)
 
 </div>
 

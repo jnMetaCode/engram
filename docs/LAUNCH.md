@@ -13,7 +13,9 @@ you want it private.
       username is taken, create an npm **org** named `jnmetacode` (orgs also grant
       the scope; free for public packages). Fallback if both are gone:
       `@jn-metacode` (then rename here + in package.json/READMEs).
-- [ ] Record the hero GIF (script below) → `docs/demo.gif`, uncomment in README.
+- [x] Record the hero GIF (script below) → `docs/demo.gif`, linked in README.
+      *(done — vhs-recorded: ingest → cited recall → `--since week` filtering;
+      re-record any time with a tape like the script below)*
 - [ ] Add `NPM_TOKEN` repo secret (an *Automation* token from the account that owns
       the scope); `git tag v0.1.0 && git push --tags` to publish
       (`.github/workflows/publish.yml` already passes `--access public`, which
