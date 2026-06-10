@@ -34,13 +34,13 @@ ENGRAM_STORE=/tmp/engram-demo.json node src/cli.js recall "auth token expiry roo
 ENGRAM_STORE=/tmp/engram-demo.json node src/cli.js status
 ```
 
-(Installed via npm it's just `npx engram ingest ~/notes` — no `ENGRAM_STORE` or
+(Installed via npm it's just `npx @jnmetacode/engram ingest ~/notes` — no `ENGRAM_STORE` or
 `node src/cli.js` needed.)
 
 ## Keep it live
 
 ```bash
-npx engram watch examples/notes   # re-indexes automatically as you edit
+npx @jnmetacode/engram watch examples/notes   # re-indexes automatically as you edit
 ```
 
 ## Use it from your AI assistant (MCP)

@@ -7,26 +7,28 @@ you want it private.
 
 - [x] Replace `USER` with the real GitHub org → **jnMetaCode**. *(done)*
 - [x] Push public repo + topics; **CI green** → https://github.com/jnMetaCode/engram *(done)*
-- [ ] **DECIDE the npm name** — `engram` is **taken** on npm (someone's v0.0.1), so
-      `npx engram` would run their package. Options:
-      - **`@jnmetacode/engram`** (scoped, *recommended*) — keeps the brand exactly;
-        run with `npx @jnmetacode/engram`. Scoped names are reserved to you.
-      - a free unscoped name: `engram-cli` or `localgram` (verified available).
-      The CLI **bin** can stay `engram` either way (separate from the package name).
-- [ ] Set the chosen `name` in `package.json` (and update README `npx` commands).
+- [x] **npm name decided → `@jnmetacode/engram`** (scoped; unscoped `engram` is
+      taken). The CLI bin stays `engram`. `package.json` + all docs updated. *(done)*
+- [ ] **Claim the npm scope**: register npm username `jnmetacode` — or, if that
+      username is taken, create an npm **org** named `jnmetacode` (orgs also grant
+      the scope; free for public packages). Fallback if both are gone:
+      `@jn-metacode` (then rename here + in package.json/READMEs).
 - [ ] Record the hero GIF (script below) → `docs/demo.gif`, uncomment in README.
-- [ ] Add `NPM_TOKEN` repo secret; `git tag v0.1.0 && git push --tags` to publish
-      (the `.github/workflows/publish.yml` does the rest).
-- [ ] Verify the published package on a clean box: `npx <name> ingest <folder>`.
+- [ ] Add `NPM_TOKEN` repo secret (an *Automation* token from the account that owns
+      the scope); `git tag v0.1.0 && git push --tags` to publish
+      (`.github/workflows/publish.yml` already passes `--access public`, which
+      scoped packages require).
+- [ ] Verify the published package on a clean box:
+      `npx @jnmetacode/engram ingest <folder>`.
 
 ## Hero GIF (20–30s)
 
-1. `npx engram ingest ~/notes` → "✓ ingested N chunks".
-2. `npx engram recall "what did I decide about pricing"` → cited passage with a
+1. `npx @jnmetacode/engram ingest ~/notes` → "✓ ingested N chunks".
+2. `npx @jnmetacode/engram recall "what did I decide about pricing"` → cited passage with a
    date appears, score on the left.
-3. `npx engram recall "standup" --since week` → only recent memories (show the
+3. `npx @jnmetacode/engram recall "standup" --since week` → only recent memories (show the
    time filter visibly working).
-4. (optional, if Ollama is set up) `npx engram ask "summarize my auth notes"` →
+4. (optional, if Ollama is set up) `npx @jnmetacode/engram ask "summarize my auth notes"` →
    a short answer with `sources:` line.
 
 Lead with the **privacy + temporal** angle — that's the differentiator.

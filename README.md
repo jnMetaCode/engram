@@ -5,11 +5,11 @@
 ### Your local, private memory layer
 
 **Index your notes and files, then recall anything — with citations and a sense of time. 100% on your machine.**
-No cloud. No account. No data leaving your laptop. Just `npx engram`.
+No cloud. No account. No data leaving your laptop. Just `npx @jnmetacode/engram`.
 
 ```bash
-npx engram ingest ~/notes
-npx engram recall "what did I decide about pricing"
+npx @jnmetacode/engram ingest ~/notes
+npx @jnmetacode/engram recall "what did I decide about pricing"
 ```
 
 <!-- TODO: replace with a real screen recording before launch -->
@@ -24,10 +24,10 @@ memory" tools want you to upload all of it to their cloud. engram is the
 opposite: it builds a searchable memory **on your machine** and never phones home.
 
 ```bash
-npx engram ingest ~/notes ~/journal     # index markdown, text, PDF, HTML …
-npx engram recall "auth bug clock skew" # ranked passages, with citations
-npx engram recall "hiring" --since week  # time-aware: only recent memories
-npx engram ask "summarize my pricing decisions"   # (optional) local LLM answer
+npx @jnmetacode/engram ingest ~/notes ~/journal     # index markdown, text, PDF, HTML …
+npx @jnmetacode/engram recall "auth bug clock skew" # ranked passages, with citations
+npx @jnmetacode/engram recall "hiring" --since week  # time-aware: only recent memories
+npx @jnmetacode/engram ask "summarize my pricing decisions"   # (optional) local LLM answer
 ```
 
 Every result tells you exactly where it came from — `file:line` and the date —
@@ -58,23 +58,23 @@ so you can trust it and jump to the source.
 
 ```bash
 # index some notes (markdown, txt, org, rst …)
-npx engram ingest ~/Documents/notes
+npx @jnmetacode/engram ingest ~/Documents/notes
 
 # …or keep it live — re-indexes automatically as you edit
-npx engram watch ~/Documents/notes
+npx @jnmetacode/engram watch ~/Documents/notes
 
 # recall — lexical + temporal, fully offline
-npx engram recall "postgres migration plan"
-npx engram recall "standup notes" --since 7d --limit 5
+npx @jnmetacode/engram recall "postgres migration plan"
+npx @jnmetacode/engram recall "standup notes" --since 7d --limit 5
 
 # optional: semantic recall + answers via a LOCAL Ollama
-npx engram ingest ~/notes --embed           # one-time, computes embeddings
-npx engram recall "that idea about caching" --semantic
-npx engram ask "what are my open questions about auth?"
+npx @jnmetacode/engram ingest ~/notes --embed           # one-time, computes embeddings
+npx @jnmetacode/engram recall "that idea about caching" --semantic
+npx @jnmetacode/engram ask "what are my open questions about auth?"
 
 # housekeeping
-npx engram status
-npx engram forget old-project
+npx @jnmetacode/engram status
+npx @jnmetacode/engram forget old-project
 ```
 
 > **New here?** [`examples/`](examples/) has three sample notes and a 30-second
@@ -98,7 +98,7 @@ inspect it, delete it — it's yours.
 ## Memory for agents
 
 ```bash
-npx engram serve            # http://127.0.0.1:7077 (local only)
+npx @jnmetacode/engram serve            # http://127.0.0.1:7077 (local only)
 ```
 
 ```bash
