@@ -1,5 +1,7 @@
 # Launch playbook (internal)
 
+English | [简体中文](./LAUNCH.zh-CN.md)
+
 Go-to-market checklist for engram. Move out of the repo before/after launch if
 you want it private.
 
