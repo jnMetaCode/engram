@@ -19,6 +19,7 @@ import { startWatch, debounce } from '../src/watch.js';
 import { extractPdfText } from '../src/pdf.js';
 import { htmlToText } from '../src/extract.js';
 import { proximityScore } from '../src/proximity.js';
+import { runEval } from './eval/eval.js';
 import { spawn } from 'node:child_process';
 import zlib from 'node:zlib';
 
@@ -466,4 +467,10 @@ test('recall matches a past-tense memory from a present-tense question', () => {
   const hits = recall(store, 'what did we choose for pricing', { now: '2026-06-10T00:00:00.000Z' });
   assert.ok(hits.length >= 1, 'expected a hit');
   assert.match(hits[0].snippet, /chose usage-based/);
+});
+
+test('recall-quality benchmark stays above its floor (see test/eval/)', () => {
+  const r = runEval();
+  assert.ok(r.hit1 >= 0.88, `hit@1 ${r.hit1} fell below 0.88 — a ranking change regressed recall`);
+  assert.ok(r.hit3 >= 0.96, `hit@3 ${r.hit3} fell below 0.96`);
 });

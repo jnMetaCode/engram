@@ -29,11 +29,20 @@ const LEMMAS = new Map(Object.entries({
   became: 'become', found: 'find', fell: 'fall', fallen: 'fall',
 }));
 
+// Common tech-name shorthands — "postgres" must find "PostgreSQL" notes.
+const ALIASES = new Map(Object.entries({
+  postgres: 'postgresql', pg: 'postgresql', mongo: 'mongodb', k8s: 'kubernetes',
+  js: 'javascript', ts: 'typescript', py: 'python', tf: 'terraform',
+  repo: 'repository', repos: 'repositories', config: 'configuration',
+  auth: 'authentication', db: 'database', env: 'environment',
+}));
+
 // Light suffix stemmer — enough to match plural/verb forms without a dependency.
 // Plural handling follows Porter step 1a so singular/plural pairs collapse to the
 // same stem (cache/caches, class/classes, address/addresses) while words ending
 // in "ss" are preserved (class, process).
 function stem(w) {
+  w = ALIASES.get(w) || w;
   w = LEMMAS.get(w) || w;
   if (w.length <= 3) return w;
   if (/sses$/.test(w)) w = w.slice(0, -2); // processes -> process
@@ -44,6 +53,10 @@ function stem(w) {
   // common verb/noun suffixes (longest first); applied to both query and doc, so
   // it only needs to be self-consistent, not linguistically perfect.
   w = w.replace(/(ization|ational|fulness|ousness|iveness|ation|ements|ement|ments|ment|ness|edly|ingly|ing|ed)$/, '');
+  // Drop a trailing silent 'e' so suffix-stripped forms line up with their base
+  // word ("licensing"→licens must match "license"→licens; "making"→mak must
+  // match "make"→mak). Applied to both sides, so it only needs consistency.
+  if (w.length > 4 && w.endsWith('e') && !w.endsWith('ee')) w = w.slice(0, -1);
   return w;
 }
 
