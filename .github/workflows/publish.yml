@@ -18,6 +18,12 @@ jobs:
           node-version: 22
           registry-url: https://registry.npmjs.org
       - run: npm test
-      - run: npm publish --provenance --access public
+      - name: Publish (skips gracefully when NPM_TOKEN is not configured)
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          if [ -z "$NODE_AUTH_TOKEN" ]; then
+            echo "::notice::NPM_TOKEN secret not set — skipping npm publish (version may have been published manually)"
+            exit 0
+          fi
+          npm publish --provenance --access public
