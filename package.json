@@ -1,6 +1,6 @@
 {
   "name": "@jnmetacode/engram",
-  "version": "0.1.2",
+  "version": "0.2.0",
   "description": "Your local, private memory layer. Index your notes and files, then recall anything with citations and temporal reasoning — 100% on your machine.",
   "type": "module",
   "bin": {
