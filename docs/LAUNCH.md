@@ -5,12 +5,19 @@ you want it private.
 
 ## Pre-flight
 
-- [ ] Replace `USER` in `package.json`/docs with the real GitHub org/user.
-- [ ] Confirm npm name `engram` is free (`npm view engram`); fallbacks:
-      `engram-cli`, `engramdb`, `mneme`, `hippo`.
+- [x] Replace `USER` with the real GitHub org → **jnMetaCode**. *(done)*
+- [x] Push public repo + topics; **CI green** → https://github.com/jnMetaCode/engram *(done)*
+- [ ] **DECIDE the npm name** — `engram` is **taken** on npm (someone's v0.0.1), so
+      `npx engram` would run their package. Options:
+      - **`@jnmetacode/engram`** (scoped, *recommended*) — keeps the brand exactly;
+        run with `npx @jnmetacode/engram`. Scoped names are reserved to you.
+      - a free unscoped name: `engram-cli` or `localgram` (verified available).
+      The CLI **bin** can stay `engram` either way (separate from the package name).
+- [ ] Set the chosen `name` in `package.json` (and update README `npx` commands).
 - [ ] Record the hero GIF (script below) → `docs/demo.gif`, uncomment in README.
-- [ ] Add `NPM_TOKEN` secret; `git tag v0.1.0 && git push --tags` to publish.
-- [ ] Verify `npx engram ingest <folder> && engram recall "..."` on a clean box.
+- [ ] Add `NPM_TOKEN` repo secret; `git tag v0.1.0 && git push --tags` to publish
+      (the `.github/workflows/publish.yml` does the rest).
+- [ ] Verify the published package on a clean box: `npx <name> ingest <folder>`.
 
 ## Hero GIF (20–30s)
 
@@ -30,24 +37,26 @@ Lead with the **privacy + temporal** angle — that's the differentiator.
 > Show HN: Engram – a local, private memory layer for your notes (and your agents)
 
 **Body:**
-> I wanted to ask questions of my own notes without uploading my life to someone's
-> cloud. Engram indexes your markdown/text files into a single local JSON file and
-> gives you ranked, cited recall — `engram recall "auth bug clock skew"` returns
-> the passage with its `file:line` and date.
+> I wanted to ask questions of my own notes and PDFs without uploading my life to
+> someone's cloud. Engram indexes your markdown, text, PDF and HTML files into a
+> single local file and gives you ranked, cited recall — `engram recall "auth bug
+> clock skew"` returns the passage with its `file:line` and date.
 >
 > Two things I cared about:
 > - **Local & private.** Nothing leaves your machine. Optional semantic search and
 >   answers run through a local Ollama; with no model at all it still works via a
->   built-in BM25 engine.
+>   built-in BM25 engine (plus phrase/proximity ranking).
 > - **Time is first-class.** Every memory has a timestamp (file mtime + dates in
 >   the text), recall is recency-aware, and you can do `--since week`. Most "AI
 >   memory" tools are flat vector dumps with no sense of when.
 >
-> It also runs as a tiny local API (`engram serve`) so your agents get private,
-> persistent memory. Zero dependencies (Node built-ins), MIT.
+> It also runs `engram watch` to stay live as you edit, and as an **MCP server** so
+> Claude/any agent can recall and store memories locally. Zero dependencies (Node
+> built-ins), MIT.
 >
-> Repo: <link>. Early MVP — would love feedback on the recall ranking and what
-> file types you'd want next (PDF/EPUB are on the list).
+> Repo: https://github.com/jnMetaCode/engram — try it in 30s with the sample notes
+> in `examples/`. Early MVP; would love feedback on recall ranking and PDF
+> extraction quality.
 
 Post Tue/Wed ~8am PT; reply to every comment for 3 hours.
 
