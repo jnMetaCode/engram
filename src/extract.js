@@ -19,9 +19,14 @@ export function htmlToText(html) {
     .trim();
 }
 
+// Circular with epub.js (it uses htmlToText) — safe: both sides only call the
+// imported function at runtime, never during module evaluation.
+import { extractEpubText } from './epub.js';
+
 export function extractText(file) {
   const ext = path.extname(file).toLowerCase();
   if (ext === '.pdf') return extractPdfText(fs.readFileSync(file));
+  if (ext === '.epub') return extractEpubText(fs.readFileSync(file));
   const raw = fs.readFileSync(file, 'utf8');
   if (ext === '.html' || ext === '.htm' || ext === '.xhtml') return htmlToText(raw);
   return raw;

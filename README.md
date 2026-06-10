@@ -34,10 +34,10 @@ npx @jnmetacode/engram ask "summarize my pricing decisions"   # (optional) local
 Every result tells you exactly where it came from — `file:line` and the date —
 so you can trust it and jump to the source.
 
-> **Supported files:** Markdown, text, `org`, `rst`, **PDF**, and **HTML** — all via
-> zero-dependency extractors. PDF extraction is best-effort: text-based PDFs work
-> great; scanned (image-only), encrypted, or custom-CID-font PDFs may extract
-> poorly. (EPUB is on the roadmap.)
+> **Supported files:** Markdown, text, `org`, `rst`, **PDF**, **HTML**, and
+> **EPUB** — all via zero-dependency extractors. PDF/EPUB extraction is
+> best-effort: text-based files work great; scanned (image-only), encrypted, or
+> custom-CID-font PDFs and DRM'd EPUBs may extract poorly.
 
 ## Why engram
 
@@ -161,9 +161,9 @@ Without Ollama, engram still works great in lexical + temporal mode.
 
 Early MVP. Lexical + temporal recall, citations, ingest/forget, incremental
 re-index, **live `watch` mode** (auto-reindex on change), the local agent API, an
-**MCP server** (stdio), **PDF + HTML ingestion** (zero-dep extractors), and
-optional Ollama embeddings/answers all work today. Roadmap: EPUB, and a SQLite
-store for large vaults.
+**MCP server** (stdio), **PDF + HTML + EPUB ingestion** (zero-dep extractors),
+and optional Ollama embeddings/answers all work today. Roadmap: a SQLite store
+for large vaults.
 Star/watch to follow along.
 
 ## Sibling projects

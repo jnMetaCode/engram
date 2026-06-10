@@ -33,9 +33,9 @@ npx @jnmetacode/engram ask "总结我的定价决策"          # （可选）本
 
 每条结果都精确告诉你它来自哪里——`文件:行号` 加日期——可信、可跳回原文。
 
-> **支持的文件**：Markdown、纯文本、`org`、`rst`、**PDF**、**HTML**——全部用
-> 零依赖提取器。PDF 提取尽力而为：文本型 PDF 效果很好；扫描件（纯图片）、
-> 加密或自定义 CID 字体的 PDF 可能提取不佳。（EPUB 在路线图上。）
+> **支持的文件**：Markdown、纯文本、`org`、`rst`、**PDF**、**HTML**、**EPUB**
+> ——全部用零依赖提取器。PDF/EPUB 提取尽力而为：文本型文件效果很好；扫描件、
+> 加密 PDF 或带 DRM 的 EPUB 可能提取不佳。
 
 ## 为什么选 engram
 
@@ -155,9 +155,9 @@ ollama pull llama3.2             # 供 `engram ask` 使用
 ## 状态
 
 早期 MVP。词法 + 时间召回、引用、索引/遗忘、增量重建、**实时 `watch` 模式**、
-本地 agent API、**MCP server**、**PDF + HTML 摄取**（零依赖提取器）、可选的
-Ollama embedding/问答——以上今天全部可用。召回质量有 25 条查询的基准测试
-守护（hit@1 92%）。路线图：EPUB、面向大型笔记库的 SQLite 存储。
+本地 agent API、**MCP server**、**PDF + HTML + EPUB 摄取**（零依赖提取器）、可选的
+Ollama embedding/问答——以上今天全部可用。召回质量有 26 条查询的基准测试
+守护（hit@1 92%）。路线图：面向大型笔记库的 SQLite 存储。
 欢迎 Star/Watch 关注进展。
 
 ## 姊妹项目

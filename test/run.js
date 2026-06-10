@@ -17,6 +17,7 @@ import { createHandler } from '../src/mcp.js';
 import { ingestPaths } from '../src/ingest.js';
 import { startWatch, debounce } from '../src/watch.js';
 import { extractPdfText } from '../src/pdf.js';
+import { extractEpubText } from '../src/epub.js';
 import { htmlToText } from '../src/extract.js';
 import { proximityScore } from '../src/proximity.js';
 import { runEval } from './eval/eval.js';
@@ -482,4 +483,62 @@ test('ed/ing stripping undoubles the trailing consonant (shipped matches ship)',
   // ll/ss/zz endings are not clipped
   assert.equal(tokenize('rolling')[0], 'roll');
   assert.equal(tokenize('pressed')[0], 'press');
+});
+
+// Minimal in-test ZIP/EPUB builder (CRCs unchecked by our reader).
+function buildZip(files) {
+  const chunks = []; const central = []; let offset = 0;
+  for (const f of files) {
+    const nameB = Buffer.from(f.name);
+    const raw = Buffer.from(f.data);
+    const comp = f.deflate ? zlib.deflateRawSync(raw) : raw;
+    const method = f.deflate ? 8 : 0;
+    const loc = Buffer.alloc(30);
+    loc.writeUInt32LE(0x04034b50, 0); loc.writeUInt16LE(20, 4); loc.writeUInt16LE(method, 8);
+    loc.writeUInt32LE(comp.length, 18); loc.writeUInt32LE(raw.length, 22);
+    loc.writeUInt16LE(nameB.length, 26);
+    chunks.push(loc, nameB, comp);
+    const cen = Buffer.alloc(46);
+    cen.writeUInt32LE(0x02014b50, 0); cen.writeUInt16LE(20, 4); cen.writeUInt16LE(20, 6); cen.writeUInt16LE(method, 10);
+    cen.writeUInt32LE(comp.length, 20); cen.writeUInt32LE(raw.length, 24);
+    cen.writeUInt16LE(nameB.length, 28); cen.writeUInt32LE(offset, 42);
+    central.push(Buffer.concat([cen, nameB]));
+    offset += 30 + nameB.length + comp.length;
+  }
+  const cd = Buffer.concat(central);
+  const eocd = Buffer.alloc(22);
+  eocd.writeUInt32LE(0x06054b50, 0); eocd.writeUInt16LE(files.length, 8); eocd.writeUInt16LE(files.length, 10);
+  eocd.writeUInt32LE(cd.length, 12); eocd.writeUInt32LE(offset, 16);
+  return Buffer.concat([...chunks, cd, eocd]);
+}
+
+const TINY_EPUB = () => buildZip([
+  { name: 'mimetype', data: 'application/epub+zip' },
+  { name: 'OEBPS/content.opf', deflate: true, data: `<?xml version="1.0"?>
+<package><manifest>
+  <item id="c2" href="zz-second.xhtml" media-type="application/xhtml+xml"/>
+  <item id="c1" href="aa-first.xhtml" media-type="application/xhtml+xml"/>
+</manifest><spine><itemref idref="c2"/><itemref idref="c1"/></spine></package>` },
+  // alphabetical order would put aa-first first; the spine says zz-second first
+  { name: 'OEBPS/aa-first.xhtml', deflate: true, data: '<html><body><p>The ending of the story.</p></body></html>' },
+  { name: 'OEBPS/zz-second.xhtml', data: '<html><body><h1>Chapter One</h1><p>It began on 2026-03-01 with a migration.</p></body></html>' },
+]);
+
+test('extractEpubText reads chapters (stored + deflate) in spine order', () => {
+  const text = extractEpubText(TINY_EPUB());
+  assert.match(text, /Chapter One/);
+  assert.match(text, /ending of the story/);
+  assert.ok(text.indexOf('Chapter One') < text.indexOf('ending of the story'), 'spine order must win over filename order');
+});
+
+test('epub ingestion end-to-end: chunked, dated, recallable', () => {
+  const dir = fs.mkdtempSync(join(os.tmpdir(), 'engram-epub-'));
+  fs.writeFileSync(join(dir, 'book.epub'), TINY_EPUB());
+  const store = { version: 1, updatedAt: null, chunks: [] };
+  for (const f of walkFiles([dir])) ingestChunks(store, f, chunkFile(f).chunks);
+  const res = recall(store, 'when did the migration begin', { now: NOW });
+  assert.ok(res.length >= 1);
+  assert.match(res[0].source, /book\.epub/);
+  assert.equal(res[0].date, '2026-03-01'); // date extracted from chapter text
+  fs.rmSync(dir, { recursive: true, force: true });
 });

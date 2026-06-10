@@ -77,7 +77,7 @@ const commands = {
     if (!paths.length) throw new UserError('usage: engram ingest <path...>');
     const file = flags.store || defaultStorePath();
     const r = await ingestPaths(file, paths, { force: flags.force, embed: flags.embed, host: flags.host, model: flags.model });
-    if (!r.files) throw new UserError('no supported files found (md, txt, org, rst, pdf, html)');
+    if (!r.files) throw new UserError('no supported files found (md, txt, org, rst, pdf, html, epub)');
     if (flags.embed && !r.embedded) log(c.yellow('! Ollama not reachable — ingested without embeddings'));
     const skipped = r.unchanged ? `, ${r.unchanged} unchanged (skipped)` : '';
     log(c.green('✓'), `ingested ${r.chunks} chunks from ${r.changed} file(s)${r.embedded ? ' (with embeddings)' : ''}${skipped}`);

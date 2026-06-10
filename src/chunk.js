@@ -6,7 +6,7 @@ import { extractText } from './extract.js';
 
 export const DEFAULT_EXTS = new Set([
   '.md', '.markdown', '.txt', '.text', '.org', '.rst',
-  '.pdf', '.html', '.htm', '.xhtml',
+  '.pdf', '.html', '.htm', '.xhtml', '.epub',
 ]);
 const SKIP_DIRS = new Set(['.git', 'node_modules', '.engram', '.obsidian', 'dist', 'build']);
 
