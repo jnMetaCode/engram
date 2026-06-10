@@ -9,19 +9,16 @@ you want it private.
 - [x] Push public repo + topics; **CI green** → https://github.com/jnMetaCode/engram *(done)*
 - [x] **npm name decided → `@jnmetacode/engram`** (scoped; unscoped `engram` is
       taken). The CLI bin stays `engram`. `package.json` + all docs updated. *(done)*
-- [ ] **Claim the npm scope**: register npm username `jnmetacode` — or, if that
-      username is taken, create an npm **org** named `jnmetacode` (orgs also grant
-      the scope; free for public packages). Fallback if both are gone:
-      `@jn-metacode` (then rename here + in package.json/READMEs).
+- [x] **npm scope claimed**: the `jnmetacode` npm account exists and is logged
+      in on the dev machine — the `@jnmetacode/*` scope is ours. *(done)*
 - [x] Record the hero GIF (script below) → `docs/demo.gif`, linked in README.
       *(done — vhs-recorded: ingest → cited recall → `--since week` filtering;
       re-record any time with a tape like the script below)*
-- [ ] Add `NPM_TOKEN` repo secret (an *Automation* token from the account that owns
-      the scope); `git tag v0.1.0 && git push --tags` to publish
-      (`.github/workflows/publish.yml` already passes `--access public`, which
-      scoped packages require).
-- [ ] Verify the published package on a clean box:
-      `npx @jnmetacode/engram ingest <folder>`.
+- [x] **Published**: `@jnmetacode/engram` is live on npm (v0.1.1, published from
+      the logged-in local account; tags + GitHub releases created). *(done)*
+- [x] Verified on a clean npm cache: `npx @jnmetacode/engram` ingest/recall. *(done)*
+- [ ] *(optional)* Add the `NPM_TOKEN` repo secret so future tag pushes publish
+      from CI (the workflow skips publish gracefully while it's absent).
 
 ## Hero GIF (20–30s)
 
