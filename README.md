@@ -12,9 +12,9 @@ npx @jnmetacode/engram ingest ~/notes
 npx @jnmetacode/engram recall "what did I decide about pricing"
 ```
 
-English | [简体中文](./README.zh-CN.md)
+English | [简体中文](https://github.com/jnMetaCode/engram/blob/main/README.zh-CN.md)
 
-![engram demo — ingest, recall with citations, time-aware filtering](docs/demo.gif)
+![engram demo — ingest, recall with citations, time-aware filtering](https://raw.githubusercontent.com/jnMetaCode/engram/main/docs/demo.gif)
 
 </div>
 
