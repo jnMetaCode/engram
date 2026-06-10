@@ -6,11 +6,47 @@
 // using CID/Type0 fonts with custom encodings will extract poorly or not at all.
 import zlib from 'node:zlib';
 
+function printableRatio(s) {
+  if (!s.length) return 1;
+  let p = 0;
+  for (let i = 0; i < s.length; i++) {
+    const c = s.charCodeAt(i);
+    if (c === 9 || c === 10 || c === 13 || (c >= 32 && c !== 127)) p++;
+  }
+  return p / s.length;
+}
+
+// Real prose is overwhelmingly ASCII letters/digits/punctuation/whitespace;
+// mis-decoded binary is overwhelmingly high-byte Latin-1. (Unicode text arrives
+// via UTF-16BE hex strings, which decode to code units > 0xff and still pass.)
+function asciiRatio(s) {
+  if (!s.length) return 1;
+  let a = 0;
+  for (let i = 0; i < s.length; i++) {
+    const c = s.charCodeAt(i);
+    if (c === 9 || c === 10 || c === 13 || (c >= 32 && c < 127) || c > 0xff) a++;
+  }
+  return a / s.length;
+}
+
 function decodeHex(hex) {
   let out = '';
   const h = hex.replace(/[^0-9a-fA-F]/g, '');
   for (let i = 0; i < h.length; i += 2) out += String.fromCharCode(parseInt(h.substr(i, 2).padEnd(2, '0'), 16));
-  return out;
+  // Many PDFs write text as UTF-16BE hex strings (<0048 0065 …> = "He"): if every
+  // other byte is NUL, re-join the code units instead of emitting binary.
+  if (out.length >= 4 && out.length % 2 === 0) {
+    let nulls = 0;
+    for (let i = 0; i < out.length; i += 2) if (out.charCodeAt(i) === 0) nulls++;
+    if (nulls === out.length / 2) {
+      let u = '';
+      for (let i = 0; i < out.length; i += 2) u += String.fromCharCode((out.charCodeAt(i) << 8) | out.charCodeAt(i + 1));
+      out = u;
+    }
+  }
+  // CID/Type0 hex strings are glyph indexes, not characters — decoding them
+  // yields control-char soup. Better to extract nothing than garbage.
+  return printableRatio(out) < 0.7 ? '' : out;
 }
 
 // Decode a PDF literal string body (the bytes between the outer parens), honoring
@@ -115,11 +151,18 @@ export function extractPdfText(buffer) {
     const slice = Buffer.from(data.slice(start, end), 'latin1');
     const content = tryInflate(slice) || data.slice(start, end);
     // Only mine actual content streams — skip image/font/binary streams so we
-    // don't emit garbage from random '(' bytes.
-    if (/BT|Tj|TJ/.test(content)) text += extractFromContent(content) + '\n';
+    // don't emit garbage from random '(' bytes. Require a real text block (BT)
+    // *and* sanity-check what we extracted: binary streams can contain "Tj" by
+    // chance, and their '('/'<' bytes decode to high-byte soup.
+    if (/\bBT\b/.test(content)) {
+      const got = extractFromContent(content);
+      if (asciiRatio(got) >= 0.7) text += got + '\n';
+    }
     streamRe.lastIndex = end + 'endstream'.length;
   }
   return text
+    .replace(/[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]/g, "") // strip stray control bytes
+    .replace(/[ \t]{2,}/g, ' ') // PDF layout positioning, not prose spacing
     .replace(/[ \t]+\n/g, '\n')
     .replace(/\n{3,}/g, '\n\n')
     .trim();

@@ -230,6 +230,38 @@ test('extractPdfText ignores non-text (image/binary) streams', () => {
   assert.equal(extractPdfText(buf).trim(), ''); // no BT/Tj -> nothing mined
 });
 
+test('extractPdfText decodes UTF-16BE hex strings instead of emitting NULs', () => {
+  // <0048 0069> = "Hi" as a Type0/Identity-H text-showing hex string
+  const buf = Buffer.from('%PDF-1.4\nstream\nBT <00480069> Tj ET\nendstream\n%%EOF', 'latin1');
+  const out = extractPdfText(buf);
+  assert.match(out, /Hi/);
+  assert.ok(!out.includes(' '));
+});
+
+test('extractPdfText drops CID glyph-index hex soup rather than indexing garbage', () => {
+  // Odd-positioned NULs (not UTF-16BE-shaped) — raw CID codes, unmappable.
+  const buf = Buffer.from('%PDF-1.4\nstream\nBT <0F00140019001E00> Tj ET\nendstream\n%%EOF', 'latin1');
+  assert.equal(extractPdfText(buf).trim(), '');
+});
+
+test('extractPdfText rejects binary streams that contain "Tj"/"BT" by chance', () => {
+  // High-byte font-program soup with embedded BT/Tj and a stray '(' string.
+  const junk = 'BT \xae\xc5\xdc\xf3\xe8\x9f (\xb0\xc8\xe1\xf9\xaa\xbb\xcc\xdd\xee\xff\xa1\xa2\xa3) Tj';
+  const buf = Buffer.from(`%PDF-1.4\nstream\n${junk}\nendstream\n%%EOF`, 'latin1');
+  assert.equal(extractPdfText(buf).trim(), '');
+});
+
+test('extractPdfText collapses PDF layout spacing runs', () => {
+  const out = extractPdfText(uncompressedPdf('cols:   a        b          c'));
+  assert.match(out, /cols: a b c/);
+});
+
+test('chunkText drops mostly-non-printable chunks (extractor garbage guard)', () => {
+  const binary = Array.from({ length: 300 }, (_, i) => String.fromCharCode(i % 28)).join('');
+  assert.equal(chunkText(binary).length, 0);
+  assert.equal(chunkText('Normal prose survives the guard.').length, 1);
+});
+
 test('htmlToText strips tags, scripts, and decodes entities', () => {
   const t = htmlToText('<h1>Title</h1><p>Hello &amp; welcome &lt;ok&gt;</p><script>var x=1</script>');
   assert.match(t, /Title/);

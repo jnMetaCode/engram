@@ -77,7 +77,7 @@ const commands = {
     if (!paths.length) throw new UserError('usage: engram ingest <path...>');
     const file = flags.store || defaultStorePath();
     const r = await ingestPaths(file, paths, { force: flags.force, embed: flags.embed, host: flags.host, model: flags.model });
-    if (!r.files) throw new UserError('no supported files found (md, markdown, txt, text, org, rst)');
+    if (!r.files) throw new UserError('no supported files found (md, txt, org, rst, pdf, html)');
     if (flags.embed && !r.embedded) log(c.yellow('! Ollama not reachable — ingested without embeddings'));
     const skipped = r.unchanged ? `, ${r.unchanged} unchanged (skipped)` : '';
     log(c.green('✓'), `ingested ${r.chunks} chunks from ${r.changed} file(s)${r.embedded ? ' (with embeddings)' : ''}${skipped}`);
@@ -116,7 +116,7 @@ const commands = {
     for (const r of results) {
       const when = r.date || r.when?.slice(0, 10) || '';
       log(`  ${c.green(r.score.toFixed(3))}  ${c.cyan(r.citation)}  ${c.dim(when)}`);
-      log(`    ${r.snippet.replace(/\n/g, ' ')}`);
+      log(`    ${r.snippet.replace(/\s+/g, ' ')}`);
       log('');
     }
   },
@@ -133,13 +133,18 @@ const commands = {
     if (!results.length) return log(c.dim('no relevant memories found.'));
 
     if (await ollamaUp(flags.host)) {
-      const text = await answer(query, results, { host: flags.host, model: flags.model });
-      log('\n' + text + '\n');
-      log(c.dim('sources: ' + results.map((r) => r.citation).join(', ')));
+      try {
+        const text = await answer(query, results, { host: flags.host, model: flags.model });
+        log('\n' + text + '\n');
+        log(c.dim('sources: ' + results.map((r) => r.citation).join(', ')));
+        return;
+      } catch (e) {
+        log(c.yellow(`! ${e.message} — showing the passages instead:\n`));
+      }
     } else {
       log(c.yellow('! Ollama not reachable — showing the passages instead:\n'));
-      for (const r of results) log(`  ${c.cyan(r.citation)}\n    ${r.snippet.replace(/\n/g, ' ')}\n`);
     }
+    for (const r of results) log(`  ${c.cyan(r.citation)}\n    ${r.snippet.replace(/\s+/g, ' ')}\n`);
   },
 
   status(_args, flags) {
@@ -190,6 +195,7 @@ async function main() {
 
 main().catch((e) => {
   if (e instanceof UserError) console.error(c.red('✗ ') + e.message);
-  else console.error(e);
+  else if (process.env.ENGRAM_DEBUG) console.error(e);
+  else console.error(c.red('✗ ') + (e?.message || e));
   process.exitCode = 1;
 });

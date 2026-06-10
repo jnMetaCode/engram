@@ -61,6 +61,15 @@ export function extractDate(text) {
   return null;
 }
 
+function mostlyPrintable(s) {
+  let p = 0;
+  for (let i = 0; i < s.length; i++) {
+    const c = s.charCodeAt(i);
+    if (c === 9 || c === 10 || c === 13 || (c >= 32 && c !== 127)) p++;
+  }
+  return p / s.length >= 0.7;
+}
+
 /**
  * Split file text into chunks. Greedy: accumulate paragraphs (blank-line
  * separated), starting a fresh chunk at headings or when a size cap is hit.
@@ -74,7 +83,10 @@ export function chunkText(text, { maxChars = 900, minChars = 200 } = {}) {
 
   const flush = (endLine) => {
     const body = buf.join('\n').trim();
-    if (body) chunks.push({ text: body, startLine, endLine, date: extractDate(body) });
+    // Last line of defense: never index a chunk that is mostly non-printable
+    // (a binary stream that slipped past an extractor) — it pollutes recall
+    // and breaks embedding backends.
+    if (body && mostlyPrintable(body)) chunks.push({ text: body, startLine, endLine, date: extractDate(body) });
     buf = [];
     len = 0;
   };

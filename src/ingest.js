@@ -26,7 +26,7 @@ export async function ingestPaths(storeFile, paths, { force = false, embed = fal
     const c = chunkFile(f).chunks;
     if (useEmbed && c.length) {
       const vecs = await embedMany(c.map((x) => x.text), { host, model });
-      c.forEach((x, i) => (x.embedding = vecs[i]));
+      c.forEach((x, i) => { if (vecs[i]) x.embedding = vecs[i]; });
     }
     chunks += ingestChunks(store, f, c);
   }
