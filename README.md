@@ -12,6 +12,8 @@ npx @jnmetacode/engram ingest ~/notes
 npx @jnmetacode/engram recall "what did I decide about pricing"
 ```
 
+English | [简体中文](./README.zh-CN.md)
+
 ![engram demo — ingest, recall with citations, time-aware filtering](docs/demo.gif)
 
 </div>
@@ -120,7 +122,7 @@ project `.mcp.json`):
   "mcpServers": {
     "engram": {
       "command": "npx",
-      "args": ["-y", "engram", "mcp"]
+      "args": ["-y", "@jnmetacode/engram", "mcp"]
     }
   }
 }

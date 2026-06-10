@@ -46,7 +46,7 @@ npx @jnmetacode/engram watch examples/notes   # re-indexes automatically as you 
 ## Use it from your AI assistant (MCP)
 
 ```json
-{ "mcpServers": { "engram": { "command": "npx", "args": ["-y", "engram", "mcp"] } } }
+{ "mcpServers": { "engram": { "command": "npx", "args": ["-y", "@jnmetacode/engram", "mcp"] } } }
 ```
 
 Now the assistant can `engram_recall` your notes and `engram_remember` new facts —
