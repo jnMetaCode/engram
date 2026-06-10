@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import fs from 'node:fs';
-import { loadStore, saveStore, forgetSource, stats, defaultStorePath } from './store.js';
+import { loadStore, saveStore, forgetSource, reinforce, stats, defaultStorePath } from './store.js';
 import { recall } from './recall.js';
 import { ollamaUp, embedOne } from './embed.js';
 import { answer } from './ask.js';
@@ -48,6 +48,8 @@ ${c.bold('Commands')}
   ${c.cyan('watch')} <path...>      index now, then auto-reindex on change (live memory)
   ${c.cyan('recall')} <query>       find relevant passages with citations
   ${c.cyan('ask')} <query>          answer from memory (needs local Ollama)
+  ${c.cyan('reinforce')} "<q>" <src> self-improving recall: mark which source answered
+                       a query correctly — similar queries rank it higher
   ${c.cyan('status')}               show what's stored
   ${c.cyan('forget')} <substr>      remove memories whose source matches
   ${c.cyan('serve')}                start the local memory API (HTTP, for agents)
@@ -145,6 +147,20 @@ const commands = {
       log(c.yellow('! Ollama not reachable — showing the passages instead:\n'));
     }
     for (const r of results) log(`  ${c.cyan(r.citation)}\n    ${r.snippet.replace(/\s+/g, ' ')}\n`);
+  },
+
+  reinforce(pos, flags) {
+    const [query, needle] = pos;
+    if (!query || !needle) {
+      throw new UserError('usage: engram reinforce "<query>" <source-substring>  (quote the query)');
+    }
+    const file = flags.store || defaultStorePath();
+    const store = loadStore(file);
+    const sources = reinforce(store, query, needle);
+    if (!sources.length) throw new UserError(`no stored source matches "${needle}" — nothing reinforced`);
+    saveStore(store, file);
+    log(c.green('✓'), `reinforced — queries like "${query}" will now rank higher:`);
+    for (const s of sources) log(c.dim(`  ${s}`));
   },
 
   status(_args, flags) {

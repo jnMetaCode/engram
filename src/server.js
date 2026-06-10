@@ -1,7 +1,7 @@
 // A tiny LOCAL HTTP API so your AI agents can remember and recall — the
 // open, local alternative to a hosted agent-memory service. Binds to 127.0.0.1.
 import http from 'node:http';
-import { loadStore, saveStore, rememberText, stats } from './store.js';
+import { loadStore, saveStore, rememberText, stats, reinforce } from './store.js';
 import { recall } from './recall.js';
 
 function readJson(req, limit = 5 * 1024 * 1024) {
@@ -41,13 +41,21 @@ export function startServer({ port = 7077, storeFile, host = '127.0.0.1' } = {})
         saveStore(store, storeFile);
         return send(res, 200, { ok: true, chunks });
       }
+      if (req.method === 'POST' && url.pathname === '/reinforce') {
+        const { query, source } = await readJson(req);
+        if (!query || !source) return send(res, 400, { error: 'query and source are required' });
+        const store = loadStore(storeFile);
+        const sources = reinforce(store, query, source);
+        if (sources.length) saveStore(store, storeFile);
+        return send(res, 200, { ok: true, reinforced: sources });
+      }
       if (req.method === 'POST' && url.pathname === '/recall') {
         const { query, limit, since, until } = await readJson(req);
         if (!query) return send(res, 400, { error: 'query is required' });
         const results = recall(loadStore(storeFile), query, { limit, since, until });
         return send(res, 200, { results });
       }
-      return send(res, 404, { error: 'try GET /stats, POST /remember, POST /recall' });
+      return send(res, 404, { error: 'try GET /stats, POST /remember, POST /recall, POST /reinforce' });
     } catch (e) {
       return send(res, 400, { error: String(e.message) });
     }

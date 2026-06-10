@@ -5,6 +5,15 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-06-11
+### Added
+- **Self-improving recall** — `engram reinforce "<query>" <source>` (also
+  `POST /reinforce` and the `engram_reinforce` MCP tool) records which source
+  correctly answered a query; similar future queries rank it higher. The
+  boost is bounded, only re-orders already-relevant results, lives as plain
+  data in the store file, and is dropped by `forget`. Pairs with the new
+  `self-evolve` skill in the skillet registry.
+
 ## [0.2.0] - 2026-06-11
 ### Added
 - **EPUB ingestion** — zero-dependency ZIP + OPF spine parsing; chapters are
@@ -49,7 +58,8 @@ First public release.
   whole ingest.
 - Clean one-line CLI errors (`ENGRAM_DEBUG=1` for stack traces).
 
-[Unreleased]: https://github.com/jnMetaCode/engram/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/jnMetaCode/engram/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/jnMetaCode/engram/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/jnMetaCode/engram/compare/v0.1.2...v0.2.0
 [0.1.2]: https://github.com/jnMetaCode/engram/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/jnMetaCode/engram/compare/v0.1.0...v0.1.1

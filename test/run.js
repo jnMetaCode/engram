@@ -8,7 +8,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { tokenize } from '../src/text.js';
 import { chunkText, extractDate, walkFiles, chunkFile } from '../src/chunk.js';
-import { loadStore, ingestChunks, changedFiles, rememberText, forgetSource, stats } from '../src/store.js';
+import { loadStore, ingestChunks, changedFiles, rememberText, forgetSource, reinforce, feedbackBonus, stats } from '../src/store.js';
 import { buildIndex, scoreChunk } from '../src/bm25.js';
 import { cosine } from '../src/embed.js';
 import { recall } from '../src/recall.js';
@@ -389,7 +389,7 @@ test('MCP handler: tools/list, remember, recall, errors', async () => {
 
   const list = await handle({ jsonrpc: '2.0', id: 2, method: 'tools/list', params: {} });
   const names = list.result.tools.map((t) => t.name);
-  assert.deepEqual(names.sort(), ['engram_recall', 'engram_remember', 'engram_status']);
+  assert.deepEqual(names.sort(), ['engram_recall', 'engram_reinforce', 'engram_remember', 'engram_status']);
   assert.equal(list.result.tools[0].inputSchema.type, 'object');
 
   const rem = await handle({ jsonrpc: '2.0', id: 3, method: 'tools/call', params: { name: 'engram_remember', arguments: { text: 'We picked Postgres on 2026-05-01' } } });
@@ -541,4 +541,65 @@ test('epub ingestion end-to-end: chunked, dated, recallable', () => {
   assert.match(res[0].source, /book\.epub/);
   assert.equal(res[0].date, '2026-03-01'); // date extracted from chapter text
   fs.rmSync(dir, { recursive: true, force: true });
+});
+
+// ---- self-improving recall (reinforce) -------------------------------------
+test('reinforce flips the ranking for similar queries, bounded and source-scoped', () => {
+  const store = { version: 1, updatedAt: null, chunks: [] };
+  const mk = (src, text) => ({ text, source: src, startLine: 1, endLine: 1, mtime: NOW, when: NOW });
+  // two chunks that score identically for the query
+  ingestChunks(store, 'a.md', [mk('a.md', 'release process checklist for the team')]);
+  ingestChunks(store, 'b.md', [mk('b.md', 'release process checklist for the team')]);
+
+  const before = recall(store, 'release process checklist', { now: NOW });
+  assert.equal(before.length, 2);
+
+  // user confirms b.md was the right answer
+  const sources = reinforce(store, 'release process checklist', 'b.md');
+  assert.deepEqual(sources, ['b.md']);
+
+  const after = recall(store, 'release process checklist', { now: NOW });
+  assert.match(after[0].source, /b\.md/, 'reinforced source ranks first');
+
+  // a *different* question is unaffected (overlap below the 0.5 floor)
+  assert.equal(feedbackBonus(store, tokenize('unrelated zebra migration'), 'b.md'), 0);
+
+  // repeated confirmations grow the bonus but never past the bound
+  for (let i = 0; i < 50; i++) reinforce(store, 'release process checklist', 'b.md');
+  assert.equal(store.feedback.length, 1, 'same query+source folds into one entry');
+  assert.ok(feedbackBonus(store, tokenize('release process checklist'), 'b.md') <= 0.3);
+
+  // reinforcement re-orders, it never resurrects: a non-matching query still
+  // returns nothing even for the reinforced source
+  assert.equal(recall(store, 'quantum lighthouse', { now: NOW }).length, 0);
+
+  // forgetting the source drops its feedback too
+  forgetSource(store, 'b.md');
+  assert.equal(store.feedback.length, 0);
+});
+
+test('reinforce against a missing source reinforces nothing', () => {
+  const store = { version: 1, updatedAt: null, chunks: [] };
+  ingestChunks(store, 'a.md', [{ text: 'hello world note', source: 'a.md', startLine: 1, endLine: 1, mtime: NOW, when: NOW }]);
+  assert.deepEqual(reinforce(store, 'hello world', 'nope.md'), []);
+  assert.ok(!store.feedback || store.feedback.length === 0);
+});
+
+test('MCP exposes engram_reinforce and it persists feedback', async () => {
+  const file = tmpStore();
+  const store = { version: 1, updatedAt: null, chunks: [] };
+  rememberText(store, { text: 'We chose usage-based pricing.', source: 'decisions' });
+  const { saveStore } = await import('../src/store.js');
+  saveStore(store, file);
+
+  const handle = createHandler({ storeFile: file });
+  const list = await handle({ jsonrpc: '2.0', id: 1, method: 'tools/list', params: {} });
+  assert.ok(list.result.tools.some((t) => t.name === 'engram_reinforce'));
+
+  const res = await handle({
+    jsonrpc: '2.0', id: 2, method: 'tools/call',
+    params: { name: 'engram_reinforce', arguments: { query: 'what pricing did we choose', source: 'decisions' } },
+  });
+  assert.match(res.result.content[0].text, /Reinforced/);
+  assert.equal(loadStore(file).feedback.length, 1);
 });

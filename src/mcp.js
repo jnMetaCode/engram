@@ -4,7 +4,7 @@
 // Protocol: JSON-RPC 2.0, newline-delimited, one object per line. stdout carries
 // ONLY protocol messages; all logging goes to stderr. Spec revision 2025-06-18.
 import fs from 'node:fs';
-import { loadStore, saveStore, rememberText, stats } from './store.js';
+import { loadStore, saveStore, rememberText, reinforce, stats } from './store.js';
 import { recall } from './recall.js';
 import { parseSince } from './when.js';
 
@@ -57,6 +57,21 @@ export const TOOLS = [
     description: 'Report how many memories and sources are currently stored in the local engram memory.',
     inputSchema: { type: 'object', properties: {} },
   },
+  {
+    name: 'engram_reinforce',
+    description:
+      'Self-improving recall: after a recall, confirm which source correctly answered the query. ' +
+      'Future similar queries will rank that source higher. Use when you verified an answer was ' +
+      'right (or the user confirmed it) so the memory gets better with use.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        query: { type: 'string', description: 'The query that was answered' },
+        source: { type: 'string', description: 'Substring of the source/citation that held the right answer' },
+      },
+      required: ['query', 'source'],
+    },
+  },
 ];
 
 function formatRecall(query, results) {
@@ -80,6 +95,20 @@ function makeTools(storeFile) {
       const { chunks } = rememberText(store, { text: a.text, source: a.source || 'agent', date: a.date });
       saveStore(store, storeFile);
       return { content: [{ type: 'text', text: `Remembered. ${chunks} memories stored.` }] };
+    },
+    async engram_reinforce(a) {
+      if (!a || !a.query || !a.source) throw new Error('query and source are required');
+      const store = loadStore(storeFile);
+      const sources = reinforce(store, a.query, a.source);
+      if (!sources.length) {
+        return { content: [{ type: 'text', text: `No stored source matches "${a.source}" — nothing reinforced.` }] };
+      }
+      saveStore(store, storeFile);
+      return {
+        content: [
+          { type: 'text', text: `Reinforced: queries like "${a.query}" will now rank ${sources.join(', ')} higher.` },
+        ],
+      };
     },
     async engram_status() {
       const s = stats(loadStore(storeFile));

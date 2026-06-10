@@ -96,9 +96,67 @@ export function changedFiles(store, fileMtimes) {
   return { changed, unchanged };
 }
 
+// ---- self-improving recall (reinforcement) ---------------------------------
+// A feedback entry says "queries like THESE terms were correctly answered by
+// THIS source". recall() turns matching entries into a bounded score bonus, so
+// the memory gets better at the questions you actually ask. Plain data, fully
+// inspectable in the store file; `forget` of a source drops its feedback too.
+
+const MAX_FEEDBACK = 500;
+
+/**
+ * Record that `query` was correctly answered by the source(s) matching
+ * `sourceNeedle`. Returns the sources reinforced (empty if none matched).
+ */
+export function reinforce(store, query, sourceNeedle) {
+  const terms = [...new Set(tokenize(query))].sort();
+  if (!terms.length) return [];
+  const sources = [...new Set(store.chunks.map((c) => c.source))].filter((s) =>
+    s.includes(sourceNeedle)
+  );
+  store.feedback ||= [];
+  const key = terms.join(' ');
+  for (const source of sources) {
+    const existing = store.feedback.find((f) => f.source === source && f.terms.join(' ') === key);
+    if (existing) {
+      existing.count++;
+      existing.lastAt = new Date().toISOString();
+    } else {
+      store.feedback.push({ terms, source, count: 1, lastAt: new Date().toISOString() });
+    }
+  }
+  // Bound the table: drop the least-recently-confirmed entries first.
+  if (store.feedback.length > MAX_FEEDBACK) {
+    store.feedback.sort((a, b) => (a.lastAt < b.lastAt ? 1 : -1));
+    store.feedback.length = MAX_FEEDBACK;
+  }
+  return sources;
+}
+
+/**
+ * Bonus for one chunk given the current query terms: the best-matching
+ * feedback entry for that chunk's source, scaled by how much of the entry's
+ * query it shares. Bounded (≤ 0.3) so reinforcement re-orders relevant
+ * results but can never overwhelm relevance itself.
+ */
+export function feedbackBonus(store, queryTerms, source) {
+  if (!store.feedback?.length) return 0;
+  const q = new Set(queryTerms);
+  let best = 0;
+  for (const f of store.feedback) {
+    if (f.source !== source) continue;
+    const overlap = f.terms.filter((t) => q.has(t)).length / f.terms.length;
+    if (overlap < 0.5) continue; // must look like the reinforced question
+    const strength = Math.min(0.3, 0.1 + 0.05 * Math.log1p(f.count));
+    best = Math.max(best, overlap * strength);
+  }
+  return best;
+}
+
 export function forgetSource(store, needle) {
   const before = store.chunks.length;
   store.chunks = store.chunks.filter((c) => !c.source.includes(needle));
+  if (store.feedback) store.feedback = store.feedback.filter((f) => !f.source.includes(needle));
   return before - store.chunks.length;
 }
 

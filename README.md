@@ -114,7 +114,7 @@ it and its memories stay on your machine, with the same temporal ranking.
 
 engram speaks the [Model Context Protocol](https://modelcontextprotocol.io) over
 stdio, so Claude Desktop / Claude Code can use your memory as a tool — `engram_recall`,
-`engram_remember`, `engram_status`. Add to `claude_desktop_config.json` (or a
+`engram_remember`, `engram_reinforce`, `engram_status`. Add to `claude_desktop_config.json` (or a
 project `.mcp.json`):
 
 ```json
@@ -131,6 +131,24 @@ project `.mcp.json`):
 Now the model can recall your notes and persist new memories mid-conversation —
 all locally. Zero dependencies, no SDK: it's a few hundred lines of pure Node
 implementing JSON-RPC over stdio (spec revision 2025-06-18).
+
+## Self-improving recall (`reinforce`)
+
+Recall gets better the more you use it. When a recall surfaces the right
+answer, say so:
+
+```bash
+npx @jnmetacode/engram recall "staging deploy fails"
+npx @jnmetacode/engram reinforce "staging deploy fails" deploy-notes.md
+```
+
+engram records "queries like this are answered by that source" (plain,
+inspectable data in your store file) and gives the source a **bounded** boost
+on similar future queries. It re-orders relevant results only — it can never
+resurrect a non-matching one — and `forget` drops a source's feedback with it.
+Agents can do this for themselves via the `engram_reinforce` MCP tool: verify
+an answer, reinforce it, and the shared memory gets sharper with every task
+(see the [`self-evolve` skill](https://github.com/jnMetaCode/skillet/tree/main/skills/self-evolve)).
 
 ## Optional: local embeddings (Ollama)
 
@@ -152,6 +170,7 @@ Without Ollama, engram still works great in lexical + temporal mode.
 | `engram watch <path...>` | index, then auto-reindex on change (live memory) |
 | `engram recall <query>` | cited passages (`--since`, `--until`, `--limit`, `--semantic`) |
 | `engram ask <query>` | compose an answer from memory (needs Ollama) |
+| `engram reinforce "<q>" <src>` | self-improving recall: confirm which source answered a query |
 | `engram status` | what's stored |
 | `engram forget <substr>` | remove memories by source |
 | `engram serve` | local memory API (HTTP) for agents |

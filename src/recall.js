@@ -4,6 +4,7 @@ import { tokenize } from './text.js';
 import { buildIndex, scoreChunk } from './bm25.js';
 import { proximityScore } from './proximity.js';
 import { cosine } from './embed.js';
+import { feedbackBonus } from './store.js';
 
 const DAY = 86400000;
 
@@ -99,7 +100,12 @@ export function recall(store, query, opts = {}) {
     lexical: lexN[i],
     semantic: semN[i],
     recencyScore: time[i],
-    score: w.lex * lexN[i] + w.sem * semN[i] + w.time * time[i],
+    // Reinforcement: a bounded bonus for sources that answered similar
+    // queries before (self-improving recall; see store.feedbackBonus). It can
+    // re-order relevant results but never resurrect non-matching ones — the
+    // `matched` gate below is feedback-blind on purpose.
+    score:
+      w.lex * lexN[i] + w.sem * semN[i] + w.time * time[i] + feedbackBonus(store, qTerms, c.source),
     matched: lex[i] > 0 || sem[i] > 0.2,
   }));
 

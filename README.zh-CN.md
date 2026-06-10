@@ -110,7 +110,7 @@ curl -s localhost:7077/recall   -d '{"query":"发布日期"}'
 
 engram 通过 stdio 实现 [Model Context Protocol](https://modelcontextprotocol.io)，
 Claude Desktop / Claude Code 可以把你的记忆当工具调用——`engram_recall`、
-`engram_remember`、`engram_status`。加入 `claude_desktop_config.json`（或项目
+`engram_remember`、`engram_reinforce`、`engram_status`。加入 `claude_desktop_config.json`（或项目
 的 `.mcp.json`）：
 
 ```json
@@ -126,6 +126,22 @@ Claude Desktop / Claude Code 可以把你的记忆当工具调用——`engram_r
 
 模型就能在对话中召回你的笔记、写入新记忆——全部在本地。零依赖、无 SDK：
 就是几百行纯 Node 实现的 stdio JSON-RPC（规范版本 2025-06-18）。
+
+## 自我进化的召回（`reinforce`）
+
+召回会越用越准。当某次召回命中了正确答案，告诉它：
+
+```bash
+npx @jnmetacode/engram recall "staging 部署失败"
+npx @jnmetacode/engram reinforce "staging 部署失败" deploy-notes.md
+```
+
+engram 会记下"这类查询的答案在那个出处"（普通的、可直接查看的数据，就在你的
+存储文件里），之后相似查询会给该出处一个**有界**加成。它只会重排相关结果，
+绝不会把不相关的内容拉回来；`forget` 删除来源时反馈记录一并清除。
+Agent 也能自己做这件事——通过 `engram_reinforce` MCP 工具：验证答案、强化它，
+共享记忆随每个任务变得更锋利（参见
+[`self-evolve` 技能](https://github.com/jnMetaCode/skillet/tree/main/skills/self-evolve)）。
 
 ## 可选：本地 embedding（Ollama）
 
@@ -147,6 +163,7 @@ ollama pull llama3.2             # 供 `engram ask` 使用
 | `engram watch <路径...>` | 索引后监听变更自动重建（实时记忆） |
 | `engram recall <查询>` | 带引用的段落（`--since`、`--until`、`--limit`、`--semantic`） |
 | `engram ask <问题>` | 基于记忆作答（需要 Ollama） |
+| `engram reinforce "<查询>" <出处>` | 自我进化召回：确认哪个出处答对了 |
 | `engram status` | 查看存储状态 |
 | `engram forget <子串>` | 按来源删除记忆 |
 | `engram serve` | 给 agent 用的本地记忆 API（HTTP） |
