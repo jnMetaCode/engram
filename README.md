@@ -167,7 +167,7 @@ Star/watch to follow along.
 
 ## Sibling projects
 
-Part of a small, local-first, zero-dependency toolkit for building AI agents:
+Part of a small, local-first, zero-dependency toolkit for building AI agents — see the [toolkit overview & end-to-end recipe](https://github.com/jnMetaCode/local-agent-toolkit):
 
 - 🧠 **engram** — a local, private memory layer for agents (and you) *(this repo)*
 - 🍳 **[skillet](https://github.com/jnMetaCode/skillet)** — a package manager for agent skills
