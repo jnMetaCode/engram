@@ -1,0 +1,19 @@
+name: Recall quality report
+description: A query that should have matched (or ranked higher) but didn't
+labels: [recall-quality]
+body:
+  - type: textarea
+    attributes:
+      label: The query you ran
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: The passage you expected it to find
+      description: Paste the note text (redact anything private — this stays your call, nothing is collected automatically).
+    validations:
+      required: true
+  - type: input
+    attributes:
+      label: Did --semantic (Ollama) change the result?
+      placeholder: "didn't try / same / better / worse"
