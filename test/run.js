@@ -449,3 +449,21 @@ test('MCP stdio: real spawned process handshake + tools/list (pure-JSON stdout)'
   const tl = lines.find((l) => l.id === 2);
   assert.ok(tl.result.tools.some((t) => t.name === 'engram_recall'));
 });
+
+test('irregular past tenses fold to their lemma (query and doc agree)', () => {
+  // direct equivalences
+  assert.deepEqual(tokenize('chose'), tokenize('choose'));
+  assert.deepEqual(tokenize('built'), tokenize('build'));
+  assert.deepEqual(tokenize('wrote'), tokenize('write'));
+  assert.deepEqual(tokenize('thought'), tokenize('think'));
+  // ambiguous noun/verb words are NOT lemmatized
+  assert.notDeepEqual(tokenize('left'), tokenize('leave'));
+});
+
+test('recall matches a past-tense memory from a present-tense question', () => {
+  const store = { version: 1, updatedAt: null, chunks: [] };
+  rememberText(store, { text: 'On 2026-06-09 we chose usage-based pricing and built the billing page.', source: 'note' });
+  const hits = recall(store, 'what did we choose for pricing', { now: '2026-06-10T00:00:00.000Z' });
+  assert.ok(hits.length >= 1, 'expected a hit');
+  assert.match(hits[0].snippet, /chose usage-based/);
+});

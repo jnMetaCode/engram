@@ -10,11 +10,31 @@ const STOPWORDS = new Set(
     .split(/\s+/)
 );
 
+// Irregular past tenses can't be suffix-stripped, but recall queries about past
+// decisions are full of them ("what did we choose" must find "we chose…").
+// Only unambiguous, common verbs — words that double as nouns (left, saw, rose,
+// ground, felt) are deliberately absent.
+const LEMMAS = new Map(Object.entries({
+  chose: 'choose', chosen: 'choose', made: 'make', built: 'build', wrote: 'write',
+  written: 'write', took: 'take', taken: 'take', gave: 'give', given: 'give',
+  went: 'go', gone: 'go', got: 'get', gotten: 'get', kept: 'keep', sent: 'send',
+  spent: 'spend', held: 'hold', ran: 'run', came: 'come', brought: 'bring',
+  bought: 'buy', thought: 'think', taught: 'teach', caught: 'catch', sold: 'sell',
+  told: 'tell', paid: 'pay', met: 'meet', began: 'begin', begun: 'begin',
+  broke: 'break', broken: 'break', spoke: 'speak', spoken: 'speak',
+  drove: 'drive', driven: 'drive', grew: 'grow', grown: 'grow', knew: 'know',
+  known: 'know', threw: 'throw', thrown: 'throw', understood: 'understand',
+  stood: 'stand', lost: 'lose', won: 'win', hid: 'hide', hidden: 'hide',
+  froze: 'freeze', frozen: 'freeze', dealt: 'deal', meant: 'mean',
+  became: 'become', found: 'find', fell: 'fall', fallen: 'fall',
+}));
+
 // Light suffix stemmer — enough to match plural/verb forms without a dependency.
 // Plural handling follows Porter step 1a so singular/plural pairs collapse to the
 // same stem (cache/caches, class/classes, address/addresses) while words ending
 // in "ss" are preserved (class, process).
 function stem(w) {
+  w = LEMMAS.get(w) || w;
   if (w.length <= 3) return w;
   if (/sses$/.test(w)) w = w.slice(0, -2); // processes -> process
   else if (/ies$/.test(w)) w = w.slice(0, -2); // queries -> queri
