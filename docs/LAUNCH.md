@@ -64,14 +64,51 @@ Lead with the **privacy + temporal** angle — that's the differentiator.
 
 Post Tue/Wed ~8am PT; reply to every comment for 3 hours.
 
-## Other channels
+## Other channels — ready-to-paste drafts
 
-- r/LocalLLaMA, r/selfhosted, r/ObsidianMD, r/PKMS — the privacy + notes crowd.
-- X thread: "your second brain, 100% local"; tag the local-AI / Ollama community.
-- A blog post: "Why your AI memory should never leave your laptop (and how to
-  build it in a few hundred lines)" — doubles as SEO + explains the temporal model.
-- GitHub topics: `local-first`, `privacy`, `second-brain`, `ai-memory`,
-  `semantic-search`, `ollama`, `rag`, `agents`.
+Blog post: drafted at [`blog-why-local-memory.md`](./blog-why-local-memory.md)
+(publish on a personal blog/dev.to the same morning; link it from the HN
+comments when ranking questions come up).
+
+**r/LocalLLaMA** (post 1–2 days after HN, adjust to comments learned):
+
+> **Title:** engram: a local, private memory layer for your notes — BM25 offline, optional Ollama for semantic recall, zero deps
+>
+> Built this because every "AI memory" tool wanted my notes in their cloud.
+> engram indexes md/txt/PDF/HTML into one local JSON file and gives ranked,
+> cited recall (`file:line` + date). Works with **no model at all** (BM25 +
+> phrase/proximity + a small stemmer); if you run Ollama it adds semantic
+> recall (`--semantic`) and short cited answers (`engram ask`) — all local.
+> Time is first-class: recency-aware ranking, `--since week`.
+> Also runs as an MCP server, so a local agent can share your memory.
+> `npx @jnmetacode/engram ingest ~/notes` to try. MIT, zero dependencies.
+> Repo: https://github.com/jnMetaCode/engram — recall-ranking feedback wanted.
+
+**r/ObsidianMD / r/PKMS** variant: lead with "query your vault from the
+terminal with citations + dates, nothing leaves your machine; `engram watch
+~/vault` keeps it live as you edit". Don't mention agents/MCP first — notes
+people care about privacy and citations.
+
+**X/Twitter thread** (pin after posting):
+
+> 1/ Your notes are a second brain you can't query. The tools that can query
+> them want them uploaded first. I built the opposite: engram — a private
+> memory layer that runs 100% on your machine. `npx @jnmetacode/engram` [GIF]
+>
+> 2/ Ask it questions, get cited passages back — file:line + date. Time is
+> first-class: "what did I decide about pricing" vs the same query `--since
+> week` (it knows that decision is 3 weeks old). [screenshot]
+>
+> 3/ No model required — built-in BM25 works offline. Run @ollama and it adds
+> semantic recall + cited answers, still local. Zero deps, MIT, a few hundred
+> lines you can read.
+>
+> 4/ The fun part: it's an MCP server. Claude (or any agent) can recall and
+> store memories mid-conversation — same file your CLI uses, nothing leaves
+> the room. Repo: github.com/jnMetaCode/engram
+
+GitHub topics (already set): `local-first`, `privacy`, `second-brain`,
+`ai-memory`, `semantic-search`, `ollama`, `rag`, `agents`.
 
 ## Cross-promo with the sibling tools
 

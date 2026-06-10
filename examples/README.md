@@ -20,7 +20,7 @@ ENGRAM_STORE=/tmp/engram-demo.json node src/cli.js ingest examples/notes
 
 # 2) ask your notes a question — results come back cited
 ENGRAM_STORE=/tmp/engram-demo.json node src/cli.js recall "what did we decide about pricing"
-#   0.96  examples/notes/2026-05-20-pricing.md:1-5  2026-05-20
+#   0.96  examples/notes/2026-05-20-pricing.md:1-6  2026-05-20
 #     We decided to ship v1 with usage-based pricing and a generous free tier…
 
 # 3) time-aware recall — only memories from the last month
