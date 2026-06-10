@@ -53,6 +53,9 @@ function stem(w) {
   // common verb/noun suffixes (longest first); applied to both query and doc, so
   // it only needs to be self-consistent, not linguistically perfect.
   w = w.replace(/(ization|ational|fulness|ousness|iveness|ation|ements|ement|ments|ment|ness|edly|ingly|ing|ed)$/, '');
+  // Undouble a trailing consonant pair left by ed/ing stripping (shipped→shipp
+  // must match ship; running→runn must match run). Keep ll/ss/zz (roll, press).
+  if (w.length >= 4 && /([b-df-hj-np-tv-z])\1$/.test(w) && !/(ll|ss|zz)$/.test(w)) w = w.slice(0, -1);
   // Drop a trailing silent 'e' so suffix-stripped forms line up with their base
   // word ("licensing"→licens must match "license"→licens; "making"→mak must
   // match "make"→mak). Applied to both sides, so it only needs consistency.

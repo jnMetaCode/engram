@@ -474,3 +474,12 @@ test('recall-quality benchmark stays above its floor (see test/eval/)', () => {
   assert.ok(r.hit1 >= 0.88, `hit@1 ${r.hit1} fell below 0.88 — a ranking change regressed recall`);
   assert.ok(r.hit3 >= 0.96, `hit@3 ${r.hit3} fell below 0.96`);
 });
+
+test('ed/ing stripping undoubles the trailing consonant (shipped matches ship)', () => {
+  assert.deepEqual(tokenize('shipped'), tokenize('ship'));
+  assert.deepEqual(tokenize('running'), tokenize('run'));
+  assert.deepEqual(tokenize('stopped'), tokenize('stop'));
+  // ll/ss/zz endings are not clipped
+  assert.equal(tokenize('rolling')[0], 'roll');
+  assert.equal(tokenize('pressed')[0], 'press');
+});
