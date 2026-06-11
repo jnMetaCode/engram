@@ -1,3 +1,8 @@
+# Re-record the hero GIF with vhs (https://github.com/charmbracelet/vhs):
+#   cd docs && vhs demo.tape
+# Assumes `engram` is on PATH and a ./notes folder with the three example
+# notes from ../examples/notes (re-date the "hiring" note into the current
+# week so the --since beat reads correctly).
 Output demo.gif
 
 Set FontSize 17
@@ -8,7 +13,7 @@ Set Padding 12
 Set TypingSpeed 35ms
 
 Hide
-Type "export PATH=ENGRAM_STORE=./.store.json PS1='$ ' && rm -f ./.store.json && clear"
+Type "export ENGRAM_STORE=./.store.json PS1='$ ' && rm -f ./.store.json && clear"
 Enter
 Show
 
