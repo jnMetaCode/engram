@@ -84,6 +84,7 @@ const commands = {
     const skipped = r.unchanged ? `, ${r.unchanged} unchanged (skipped)` : '';
     log(c.green('✓'), `ingested ${r.chunks} chunks from ${r.changed} file(s)${r.embedded ? ' (with embeddings)' : ''}${skipped}`);
     if (!r.changed && r.unchanged) log(c.dim('  nothing changed — use --force to re-ingest everything'));
+    for (const f of r.failed || []) log(c.yellow(`! skipped ${f.file}: ${f.reason}`));
     log(c.dim(`  store: ${file}`));
   },
 

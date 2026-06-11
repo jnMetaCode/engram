@@ -22,8 +22,15 @@ export async function ingestPaths(storeFile, paths, { force = false, embed = fal
     : changedFiles(store, files.map((f) => [f, fs.statSync(f).mtime.toISOString()]));
 
   let chunks = 0;
+  const failed = [];
   for (const f of changed) {
-    const c = chunkFile(f).chunks;
+    let c;
+    try {
+      c = chunkFile(f).chunks;
+    } catch (e) {
+      failed.push({ file: f, reason: e.message }); // skip the bad file, keep the run
+      continue;
+    }
     if (useEmbed && c.length) {
       const vecs = await embedMany(c.map((x) => x.text), { host, model });
       c.forEach((x, i) => { if (vecs[i]) x.embedding = vecs[i]; });
@@ -31,5 +38,5 @@ export async function ingestPaths(storeFile, paths, { force = false, embed = fal
     chunks += ingestChunks(store, f, c);
   }
   saveStore(store, storeFile);
-  return { files: files.length, changed: changed.length, unchanged: unchanged.length, chunks, embedded: useEmbed };
+  return { files: files.length, changed: changed.length - failed.length, unchanged: unchanged.length, chunks, embedded: useEmbed, failed };
 }

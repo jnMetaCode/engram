@@ -22,9 +22,10 @@ function zipEntries(buf) {
   if (eocd < 0) throw new Error('not a zip/epub (no end-of-central-directory)');
   const count = buf.readUInt16LE(eocd + 10);
   let p = buf.readUInt32LE(eocd + 16); // central directory offset
+  if (p === 0xffffffff) throw new Error('zip64 epub not supported');
   const entries = [];
   for (let i = 0; i < count; i++) {
-    if (buf.readUInt32LE(p) !== CEN_SIG) break;
+    if (p + 46 > buf.length || buf.readUInt32LE(p) !== CEN_SIG) break;
     const method = buf.readUInt16LE(p + 10);
     const compSize = buf.readUInt32LE(p + 20);
     const nameLen = buf.readUInt16LE(p + 28);
@@ -41,7 +42,7 @@ function zipEntries(buf) {
 /** Read and decompress one entry's bytes. */
 function readEntry(buf, entry) {
   const p = entry.offset;
-  if (buf.readUInt32LE(p) !== LOC_SIG) throw new Error(`bad local header for ${entry.name}`);
+  if (p + 30 > buf.length || buf.readUInt32LE(p) !== LOC_SIG) throw new Error(`bad local header for ${entry.name}`);
   const nameLen = buf.readUInt16LE(p + 26);
   const extraLen = buf.readUInt16LE(p + 28);
   const dataStart = p + 30 + nameLen + extraLen;
@@ -72,10 +73,27 @@ function spineOrder(buf, entries) {
   const base = dirOf(opf.name);
   const order = [];
   for (const m of xml.matchAll(/<itemref\b[^>]*\bidref\s*=\s*"([^"]+)"/g)) {
-    const href = items.get(m[1]);
-    if (href) order.push(base + decodeURIComponent(href));
+    let href = items.get(m[1]);
+    if (!href) continue;
+    try {
+      href = decodeURIComponent(href);
+    } catch {
+      /* malformed percent-encoding — use the raw href */
+    }
+    order.push(normalizePath(base + href));
   }
   return order.length ? order : null;
+}
+
+// Resolve '.'/'..' segments so OPF-relative hrefs match ZIP entry names.
+function normalizePath(p) {
+  const out = [];
+  for (const seg of p.split('/')) {
+    if (seg === '' || seg === '.') continue;
+    if (seg === '..') out.pop();
+    else out.push(seg);
+  }
+  return out.join('/');
 }
 
 const isChapter = (n) => /\.(xhtml|html|htm)$/i.test(n);
@@ -84,11 +102,12 @@ export function extractEpubText(buffer) {
   const buf = Buffer.isBuffer(buffer) ? buffer : Buffer.from(buffer);
   const entries = zipEntries(buf);
   const byName = new Map(entries.map((e) => [e.name, e]));
-  const ordered =
-    spineOrder(buf, entries)
-      ?.map((n) => byName.get(n))
-      .filter((e) => e && isChapter(e.name)) ||
-    entries.filter((e) => isChapter(e.name)).sort((a, b) => a.name.localeCompare(b.name));
+  const fromSpine = spineOrder(buf, entries)
+    ?.map((n) => byName.get(n))
+    .filter((e) => e && isChapter(e.name));
+  const ordered = fromSpine?.length
+    ? fromSpine
+    : entries.filter((e) => isChapter(e.name)).sort((a, b) => a.name.localeCompare(b.name));
   const parts = [];
   for (const e of ordered) {
     try {

@@ -1,5 +1,10 @@
 // Tokenization + light normalization for the lexical index. Zero deps.
 
+// Bump whenever stem()/aliases/lemmas change behavior: stores created with an
+// older tokenizer get their term frequencies recomputed on load (chunk text is
+// stored, so this is cheap and lossless).
+export const TOKENIZER_VERSION = 3;
+
 const STOPWORDS = new Set(
   ('a an the and or but if then else for to of in on at by with from up down out '
     + 'is are was were be been being am do does did doing have has had having i you '
@@ -33,7 +38,7 @@ const LEMMAS = new Map(Object.entries({
 const ALIASES = new Map(Object.entries({
   postgres: 'postgresql', pg: 'postgresql', mongo: 'mongodb', k8s: 'kubernetes',
   js: 'javascript', ts: 'typescript', py: 'python', tf: 'terraform',
-  repo: 'repository', repos: 'repositories', config: 'configuration',
+  repo: 'repository', repos: 'repository', config: 'configuration',
   auth: 'authentication', db: 'database', env: 'environment',
 }));
 
@@ -59,7 +64,9 @@ function stem(w) {
   // Drop a trailing silent 'e' so suffix-stripped forms line up with their base
   // word ("licensing"→licens must match "license"→licens; "making"→mak must
   // match "make"→mak). Applied to both sides, so it only needs consistency.
-  if (w.length > 4 && w.endsWith('e') && !w.endsWith('ee')) w = w.slice(0, -1);
+  if (w.length >= 4 && w.endsWith('e') && !w.endsWith('ee')) w = w.slice(0, -1);
+  // Fold final y to i (consonant-y only) so query/queries, study/studies agree.
+  if (w.length > 3 && /[^aeiou]y$/.test(w)) w = w.slice(0, -1) + 'i';
   return w;
 }
 

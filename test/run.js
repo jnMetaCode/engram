@@ -603,3 +603,62 @@ test('MCP exposes engram_reinforce and it persists feedback', async () => {
   assert.match(res.result.content[0].text, /Reinforced/);
   assert.equal(loadStore(file).feedback.length, 1);
 });
+
+// ---- review-pass regressions (0.3.1) ---------------------------------------
+test('epub: spine ../ hrefs resolve; unresolvable spine falls back to filenames', () => {
+  // OPF in OEBPS/, chapters in text/ — hrefs use ../
+  const epub = buildZip([
+    { name: 'OEBPS/content.opf', data: '<package><manifest><item id="c1" href="../text/ch1.xhtml"/></manifest><spine><itemref idref="c1"/></spine></package>' },
+    { name: 'text/ch1.xhtml', data: '<html><body><p>relative chapter resolved</p></body></html>' },
+  ]);
+  assert.match(extractEpubText(epub), /relative chapter resolved/);
+
+  // spine points at a missing file -> empty resolution must NOT win over fallback
+  const epub2 = buildZip([
+    { name: 'OEBPS/content.opf', data: '<package><manifest><item id="c1" href="GONE.xhtml"/></manifest><spine><itemref idref="c1"/></spine></package>' },
+    { name: 'OEBPS/real.xhtml', data: '<html><body><p>fallback chapter found</p></body></html>' },
+  ]);
+  assert.match(extractEpubText(epub2), /fallback chapter found/);
+
+  // malformed percent-encoding in href must not throw
+  const epub3 = buildZip([
+    { name: 'OEBPS/content.opf', data: '<package><manifest><item id="c1" href="ch%2.xhtml"/></manifest><spine><itemref idref="c1"/></spine></package>' },
+    { name: 'OEBPS/ok.xhtml', data: '<html><body><p>survived bad encoding</p></body></html>' },
+  ]);
+  assert.match(extractEpubText(epub3), /survived bad encoding/);
+});
+
+test('ingest: one corrupt epub is skipped and reported; good files still land', async () => {
+  const dir = fs.mkdtempSync(join(os.tmpdir(), 'engram-bad-'));
+  fs.writeFileSync(join(dir, 'good.md'), '# Good\n\nA perfectly fine note about lighthouses.');
+  fs.writeFileSync(join(dir, 'bad.epub'), Buffer.from('this is not a zip archive at all, no EOCD here'));
+  const file = tmpStore();
+  const r = await ingestPaths(file, [dir]);
+  assert.equal(r.failed.length, 1);
+  assert.match(r.failed[0].file, /bad\.epub/);
+  const res = recall(loadStore(file), 'lighthouses', { now: NOW });
+  assert.ok(res.length >= 1, 'good file ingested despite the bad one');
+  fs.rmSync(dir, { recursive: true, force: true });
+});
+
+test('stem: 4-letter e-bases match -ing forms; y/ies agree; repo aliases unified', () => {
+  assert.deepEqual(tokenize('making'), tokenize('make'));
+  assert.deepEqual(tokenize('taking'), tokenize('take'));
+  assert.deepEqual(tokenize('queries'), tokenize('query'));
+  assert.deepEqual(tokenize('studies'), tokenize('study'));
+  assert.deepEqual(tokenize('repos'), tokenize('repo'));
+});
+
+test('loadStore migrates stale stems from older tokenizer versions', () => {
+  const file = tmpStore();
+  // simulate a store written by an older stemmer: tf says "shipp", text says shipped
+  const stale = {
+    version: 1, updatedAt: null, tokv: 1,
+    chunks: [{ id: 'x1', source: 'n.md', startLine: 1, endLine: 1, mtime: NOW, when: NOW,
+      text: 'We shipped the release on Monday.', tf: { shipp: 1, releas: 1, mondai: 1 }, len: 3, embedding: null }],
+  };
+  fs.writeFileSync(file, JSON.stringify(stale));
+  const store = loadStore(file);
+  const res = recall(store, 'when did we ship', { now: NOW });
+  assert.ok(res.length >= 1, 'recomputed tf matches current query stems');
+});

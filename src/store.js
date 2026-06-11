@@ -2,7 +2,7 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { tokenize, termFreq } from './text.js';
+import { tokenize, termFreq, TOKENIZER_VERSION } from './text.js';
 import { extractDate } from './chunk.js';
 
 export function defaultStorePath() {
@@ -13,9 +13,20 @@ export function loadStore(file = defaultStorePath()) {
   try {
     const s = JSON.parse(fs.readFileSync(file, 'utf8'));
     s.chunks ||= [];
+    // The stemmer evolves; stored term frequencies are stem-dependent. When the
+    // tokenizer version moved on, recompute tf/len from the stored chunk text so
+    // old stores keep matching new query stems (persisted on the next save).
+    if (s.tokv !== TOKENIZER_VERSION) {
+      for (const c of s.chunks) {
+        const tokens = tokenize(c.text);
+        c.tf = termFreq(tokens);
+        c.len = tokens.length;
+      }
+      s.tokv = TOKENIZER_VERSION;
+    }
     return s;
   } catch (e) {
-    if (e.code === 'ENOENT') return { version: 1, updatedAt: null, chunks: [] };
+    if (e.code === 'ENOENT') return { version: 1, updatedAt: null, chunks: [], tokv: TOKENIZER_VERSION };
     throw e;
   }
 }

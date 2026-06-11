@@ -5,6 +5,21 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-06-11
+### Fixed
+Findings from an adversarial review of the 0.2/0.3 feature code:
+- EPUB: spine hrefs with `../` now resolve (path normalization); an
+  unresolvable spine falls back to filename order instead of silently
+  extracting nothing; malformed percent-encoded hrefs no longer crash;
+  hostile/ZIP64 offsets fail cleanly instead of throwing range errors.
+- Ingest: one unreadable file no longer aborts the whole run — it's skipped
+  and reported, everything else still lands.
+- Stemmer: 4-letter e-bases now match their -ing/-ed forms ("make"/"making");
+  y/ies forms agree ("query"/"queries"); the repo/repos aliases unify.
+- Stores written by older versions are migrated on load (term frequencies
+  recomputed from stored text), so stemmer improvements apply to existing
+  memories instead of silently missing them.
+
 ## [0.3.0] - 2026-06-11
 ### Added
 - **Self-improving recall** — `engram reinforce "<query>" <source>` (also
@@ -58,7 +73,8 @@ First public release.
   whole ingest.
 - Clean one-line CLI errors (`ENGRAM_DEBUG=1` for stack traces).
 
-[Unreleased]: https://github.com/jnMetaCode/engram/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/jnMetaCode/engram/compare/v0.3.1...HEAD
+[0.3.1]: https://github.com/jnMetaCode/engram/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/jnMetaCode/engram/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/jnMetaCode/engram/compare/v0.1.2...v0.2.0
 [0.1.2]: https://github.com/jnMetaCode/engram/compare/v0.1.1...v0.1.2
