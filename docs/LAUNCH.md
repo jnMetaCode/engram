@@ -125,6 +125,6 @@ engram, tracelet, and skillet are one developer-tools story:
 ## After traction
 
 - GitHub Sponsors once there are stars/issues (the stated goal).
-- Most-requested file type → ship it (PDF/EPUB likely).
+- ~~EPUB~~ shipped in 0.2.0; next file type per issue demand (DOCX likely).
 - An optional MCP server makes engram a drop-in memory tool for Claude/agents —
   strong second-wave story.

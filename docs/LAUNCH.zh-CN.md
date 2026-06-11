@@ -2,13 +2,13 @@
 
 [English](./LAUNCH.md) | 简体中文
 
-> 状态：**发布前清单已全部完成**（包已上线 npm v0.1.1、GIF、文案、反馈漏斗
+> 状态：**发布前清单已全部完成**（包已上线 npm v0.3.0、GIF、文案、反馈漏斗
 > 全就绪）。本文档剩下的部分就是你的行动指南。
 
 ## 发布前清单 —— ✅ 全部完成
 
 - ✅ GitHub 公开仓库 + topics，CI 绿
-- ✅ npm 名称 `@jnmetacode/engram`（scope 已归属，包已发布 v0.1.1）
+- ✅ npm 名称 `@jnmetacode/engram`（scope 已归属，已发布至 v0.3.0）
 - ✅ 干净环境 `npx` 验证通过
 - ✅ Hero GIF（`docs/demo.gif`，可用 `docs/demo.tape` 随时重录）
 - ⬜ *(可选)* 给仓库配 `NPM_TOKEN` secret——以后推 tag 就能 CI 自动发布
@@ -44,8 +44,11 @@
 >   memory" tools are flat vector dumps with no sense of when.
 >
 > It also runs `engram watch` to stay live as you edit, and as an **MCP server** so
-> Claude/any agent can recall and store memories locally. Zero dependencies (Node
-> built-ins), MIT.
+> Claude/any agent can recall and store memories locally. And recall is
+> **self-improving**: confirm which source answered a query (`engram reinforce`,
+> or the `engram_reinforce` MCP tool for agents) and similar queries rank it
+> higher — bounded, inspectable plain data, never resurrects non-matches. Zero
+> dependencies (Node built-ins), MIT.
 >
 > Repo: https://github.com/jnMetaCode/engram — try it in 30s with the sample notes
 > in `examples/`. Early MVP; would love feedback on recall ranking and PDF
@@ -86,5 +89,5 @@ tracelet 调试 agent、skillet 给 agent 装技能、engram 给 agent（和你�
 ## 有起色之后
 
 - 有了 star/issue 就开 GitHub Sponsors
-- issue 里呼声最高的文件类型优先做（EPUB 可能性大）
+- ~~EPUB~~ 已在 0.2.0 提前交付；下一个看 issue 呼声（EPUB 之后可能是 DOCX）
 - 第二波故事：MCP server 让 engram 成为 Claude/agent 的即插记忆
