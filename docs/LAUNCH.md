@@ -16,7 +16,7 @@ you want it private.
 - [x] Record the hero GIF (script below) → `docs/demo.gif`, linked in README.
       *(done — vhs-recorded: ingest → cited recall → `--since week` filtering;
       re-record any time with a tape like the script below)*
-- [x] **Published**: `@jnmetacode/engram` is live on npm (v0.1.1, published from
+- [x] **Published**: `@jnmetacode/engram` is live on npm (latest version, published from
       the logged-in local account; tags + GitHub releases created). *(done)*
 - [x] Verified on a clean npm cache: `npx @jnmetacode/engram` ingest/recall. *(done)*
 - [ ] *(optional)* Add the `NPM_TOKEN` repo secret so future tag pushes publish

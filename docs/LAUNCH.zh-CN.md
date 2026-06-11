@@ -2,13 +2,13 @@
 
 [English](./LAUNCH.md) | 简体中文
 
-> 状态：**发布前清单已全部完成**（包已上线 npm v0.3.0、GIF、文案、反馈漏斗
+> 状态：**发布前清单已全部完成**（包已上线 npm（最新版）、GIF、文案、反馈漏斗
 > 全就绪）。本文档剩下的部分就是你的行动指南。
 
 ## 发布前清单 —— ✅ 全部完成
 
 - ✅ GitHub 公开仓库 + topics，CI 绿
-- ✅ npm 名称 `@jnmetacode/engram`（scope 已归属，已发布至 v0.3.0）
+- ✅ npm 名称 `@jnmetacode/engram`（scope 已归属，已发布最新版）
 - ✅ 干净环境 `npx` 验证通过
 - ✅ Hero GIF（`docs/demo.gif`，可用 `docs/demo.tape` 随时重录）
 - ⬜ *(可选)* 给仓库配 `NPM_TOKEN` secret——以后推 tag 就能 CI 自动发布
