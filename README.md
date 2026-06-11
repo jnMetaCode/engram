@@ -14,7 +14,7 @@ npx @jnmetacode/engram recall "what did I decide about pricing"
 
 English | [简体中文](https://github.com/jnMetaCode/engram/blob/main/README.zh-CN.md)
 
-![engram demo — ingest, recall with citations, time-aware filtering](https://raw.githubusercontent.com/jnMetaCode/engram/main/docs/demo.gif)
+![engram demo — ingest, cited recall, time filters, and self-improving reinforce](https://raw.githubusercontent.com/jnMetaCode/engram/main/docs/demo.gif)
 
 </div>
 

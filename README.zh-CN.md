@@ -14,7 +14,7 @@ npx @jnmetacode/engram recall "我们对定价做了什么决定"
 
 [English](./README.md) | 简体中文
 
-![engram 演示 — 索引、带引用的召回、时间过滤](docs/demo.gif)
+![engram 演示 — 索引、带引用的召回、时间过滤、自我进化强化](docs/demo.gif)
 
 </div>
 
