@@ -54,8 +54,11 @@ Lead with the **privacy + temporal** angle — that's the differentiator.
 >   memory" tools are flat vector dumps with no sense of when.
 >
 > It also runs `engram watch` to stay live as you edit, and as an **MCP server** so
-> Claude/any agent can recall and store memories locally. Zero dependencies (Node
-> built-ins), MIT.
+> Claude/any agent can recall and store memories locally. And recall is
+> **self-improving**: confirm which source answered a query (`engram reinforce`,
+> or the `engram_reinforce` MCP tool for agents) and similar queries rank it
+> higher — bounded, inspectable plain data, never resurrects non-matches. Zero
+> dependencies (Node built-ins), MIT.
 >
 > Repo: https://github.com/jnMetaCode/engram — try it in 30s with the sample notes
 > in `examples/`. Early MVP; would love feedback on recall ranking and PDF
@@ -78,7 +81,9 @@ comments when ranking questions come up).
 > cited recall (`file:line` + date). Works with **no model at all** (BM25 +
 > phrase/proximity + a small stemmer); if you run Ollama it adds semantic
 > recall (`--semantic`) and short cited answers (`engram ask`) — all local.
-> Time is first-class: recency-aware ranking, `--since week`.
+> Time is first-class: recency-aware ranking, `--since week`. And it's
+> self-improving: `engram reinforce` confirms which source answered a query,
+> so recall gets sharper the more you use it.
 > Also runs as an MCP server, so a local agent can share your memory.
 > `npx @jnmetacode/engram ingest ~/notes` to try. MIT, zero dependencies.
 > Repo: https://github.com/jnMetaCode/engram — recall-ranking feedback wanted.
@@ -102,9 +107,10 @@ people care about privacy and citations.
 > semantic recall + cited answers, still local. Zero deps, MIT, a few hundred
 > lines you can read.
 >
-> 4/ The fun part: it's an MCP server. Claude (or any agent) can recall and
-> store memories mid-conversation — same file your CLI uses, nothing leaves
-> the room. Repo: github.com/jnMetaCode/engram
+> 4/ The fun part: it's an MCP server. Claude (or any agent) can recall, store
+> AND reinforce memories mid-conversation — verify an answer, confirm it, and
+> the shared memory gets sharper with every task. Self-evolving, 100% local.
+> Repo: github.com/jnMetaCode/engram
 
 GitHub topics (already set): `local-first`, `privacy`, `second-brain`,
 `ai-memory`, `semantic-search`, `ollama`, `rag`, `agents`.
