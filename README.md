@@ -128,6 +128,20 @@ project `.mcp.json`):
 }
 ```
 
+
+Works in **any MCP client** — same JSON, different config file:
+
+| Client | Where the config lives |
+| --- | --- |
+| Claude Desktop | `claude_desktop_config.json` |
+| Claude Code | project `.mcp.json` (or the plugin: `/plugin marketplace add jnMetaCode/local-agent-toolkit`) |
+| Cursor | `.cursor/mcp.json` (project) or `~/.cursor/mcp.json` |
+| Windsurf | `~/.codeium/windsurf/mcp_config.json` |
+| Cline | `cline_mcp_settings.json` |
+| Zed | `settings.json` → `context_servers` |
+
+(Check your client's MCP docs for the exact key names — the `command`/`args` pair above is the same everywhere.)
+
 Now the model can recall your notes and persist new memories mid-conversation —
 all locally. Zero dependencies, no SDK: it's a few hundred lines of pure Node
 implementing JSON-RPC over stdio (spec revision 2025-06-18).

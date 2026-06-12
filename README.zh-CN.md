@@ -124,6 +124,20 @@ Claude Desktop / Claude Code 可以把你的记忆当工具调用——`engram_r
 }
 ```
 
+
+**任何 MCP 客户端**都能用——同一段 JSON，只是配置文件位置不同：
+
+| 客户端 | 配置文件位置 |
+| --- | --- |
+| Claude Desktop | `claude_desktop_config.json` |
+| Claude Code | 项目 `.mcp.json`（或直接装插件：`/plugin marketplace add jnMetaCode/local-agent-toolkit`） |
+| Cursor | 项目 `.cursor/mcp.json` 或 `~/.cursor/mcp.json` |
+| Windsurf | `~/.codeium/windsurf/mcp_config.json` |
+| Cline | `cline_mcp_settings.json` |
+| Zed | `settings.json` → `context_servers` |
+
+（具体键名以你客户端的 MCP 文档为准——上面那段 `command`/`args` 在哪儿都一样。）
+
 模型就能在对话中召回你的笔记、写入新记忆——全部在本地。零依赖、无 SDK：
 就是几百行纯 Node 实现的 stdio JSON-RPC（规范版本 2025-06-18）。
 
